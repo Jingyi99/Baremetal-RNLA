@@ -1,5 +1,5 @@
 # set the RISCV option to ON
-option(RISCV            "Build for RISC-V"                  OFF)
+option(RISCV            "Build for RISC-V"                 ON)
 
 set(RISCV_DIR $ENV{RISCV})
 # CMake toolchain definition for RISC-V GCC toolchain

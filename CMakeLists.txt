@@ -45,6 +45,15 @@ target_link_options(target-riscv INTERFACE -T ${LINKER_SCRIPT})
 message(STATUS "${CMAKE_SOURCE_DIR}")
 
 add_executable(test_rvv test/test_rvv.c)
+add_executable(test_cpu test/test_cpu.c)
+
+if (RISCV) 
+  message(STATUS "Building for RISC-V")
+  set(cpu_impl
+  ./src/cpu/gemm.c
+  ./src/cpu/dsgemm.c
+  )
+endif()
 
 if (RISCV_V)
   message(STATUS "Using RVV implementation")
@@ -56,12 +65,19 @@ endif()
 
 add_library(bmrnla
     ${rvv_impl}
+    ${cpu_impl}
 )
 
 target_link_libraries(bmrnla target-riscv)
 
 target_link_libraries(test_rvv PUBLIC bmrnla)
 target_include_directories(test_rvv PUBLIC 
+  ./test/
+  ./dataset
+)
+
+target_link_libraries(test_cpu PUBLIC bmrnla)
+target_include_directories(test_cpu PUBLIC 
   ./test/
   ./dataset
 )
