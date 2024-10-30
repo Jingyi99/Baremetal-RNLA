@@ -1,6 +1,6 @@
 #include <riscv_vector.h>
 
-void matmul_rvv(float *c_matrix, const float *a_matrix, const float *b_matrix,
+void gemm_rvv(float *c_matrix, const float *a_matrix, const float *b_matrix,
             const unsigned int m_dim, const unsigned int n_dim,
             const unsigned int k_dim) {
     size_t vl;
