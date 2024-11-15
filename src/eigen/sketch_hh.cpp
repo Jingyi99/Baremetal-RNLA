@@ -22,6 +22,8 @@ void print_matrix(MatrixXd A, int r, int c) {
 
 int main(int argc, char* argv[1]) {
 
+
+  // Sketched HH QR Decompoistion Solver
   // Create empty sketch matrix
   float SA_[M][N] = {0};
 
@@ -45,9 +47,26 @@ int main(int argc, char* argv[1]) {
   cout << "Sketched B (SB)" << endl;
   cout << SB_ << "\n" << endl;
 
-  Matrix<float,N,P> sol1 = H.householderQr().solve(SB_);
+  Matrix<float,N,P> X_sol1 = H.householderQr().solve(SB_);
+  cout << "Linear Sketched System Solve with Householder" << endl;
+  cout << X_sol1 << endl;
+
+
+  // Nonsketched QR HH Decompositon Solver
+  Matrix<float,M,N> EB = Eigen::Map<Eigen::Matrix<float,M,N,RowMajor>> (B[0]);
+  Matrix<float,N,P> X_sol0 = EA.householderQr().solve(EB);
+
+  // Verification
+  Matrix<float,N,P> diff = X_sol0 - X_sol1;
+  float tot_err = diff.cwiseAbs().sum();
+
   cout << "Linear System Solve with Householder" << endl;
-  cout << sol1 << endl;
+  cout << X_sol0 << "\n" << endl;
+
+
+  cout << "Diff matrix:_" << endl;
+  cout << diff << "\n"  << endl;
+  cout << "Total error: " << tot_err << endl;
 
   return 0;
 }
