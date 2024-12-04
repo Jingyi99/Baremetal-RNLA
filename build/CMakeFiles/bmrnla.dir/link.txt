@@ -1,0 +1,2 @@
+/opt/anaconda3/bin/ar qc libbmrnla.a CMakeFiles/bmrnla.dir/src/cpu/gemm.c.o CMakeFiles/bmrnla.dir/src/cpu/dsgemm.c.o CMakeFiles/bmrnla.dir/src/cpu/randgen.c.o
+/opt/anaconda3/bin/ranlib libbmrnla.a
