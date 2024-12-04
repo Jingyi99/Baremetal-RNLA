@@ -83,16 +83,17 @@ float* houseHolderHelper(float beta, float* v, int m){
         }
     }
     float* vvT = (float*)malloc(m*m*sizeof(float));
-    gemm(vvT, v, v, m, 1, m);
+    gemm(vvT, v, v, m, m, 1);
     // print out vvT
+    // for (int i = 0; i < m; i++){
+    //     for (int j = 0; j < m; j++){
+    //         printf("%f ", vvT[i*m+j]);
+    //     }
+    //     printf("\n");
+    // }
     for (int i = 0; i < m; i++){
         for (int j = 0; j < m; j++){
-            printf("%f ", vvT[i*m+j]);
-        }
-        printf("\n");
-    }
-    for (int i = 0; i < m; i++){
-        for (int j = 0; j < m; j++){
+            printf("i: %d, j:%d, vvt:%f\n", i, j, beta * vvT[i*m+j]);
             result[i*m+j] = idenityMatrix[i*m+j] - beta * vvT[i*m+j];
         }
     }
@@ -111,7 +112,7 @@ void test_house() {
 
 void test_houseHolderHelper() {
     float v[3] = {1, -1, -1};
-    float beta = 2/3;
+    float beta = 1/2;
     float* result = houseHolderHelper(beta, v, 3);
     for (int i = 0; i < 3; i++){
         for (int j = 0; j < 3; j++){
@@ -133,7 +134,7 @@ void test_houseHolder() {
 }
 
 int main() {
-    test_house();
+    // test_house();
     test_houseHolderHelper();
     // test_houseHolder();
 }
