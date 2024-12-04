@@ -1,0 +1,5 @@
+/Users/xiaowenyuan/Baremetal-RNLA/build/CMakeFiles/test_cpu.dir
+/Users/xiaowenyuan/Baremetal-RNLA/build/CMakeFiles/test_rvv.dir
+/Users/xiaowenyuan/Baremetal-RNLA/build/CMakeFiles/bmrnla.dir
+/Users/xiaowenyuan/Baremetal-RNLA/build/CMakeFiles/edit_cache.dir
+/Users/xiaowenyuan/Baremetal-RNLA/build/CMakeFiles/rebuild_cache.dir
