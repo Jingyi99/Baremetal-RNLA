@@ -6,39 +6,65 @@
 float house(int m, float* x, float* v);
 float* houseHolderHelper(float beta, float* v, int m);
 
-float house(int m, float* x, float* v) {
-    float sigma;
-    float beta;
-    for (int i = 1; i < m; i++) {
-        sigma += x[i] * x[i];
+// float house(int m, float* x, float* v) {
+//     float sigma = 0;
+//     float beta = 0;
+//     for (int i = 1; i < m; i++) {
+//         sigma += x[i] * x[i];
+//     }
+//     memcpy(v, x, m * sizeof(float));
+//     v[0] = 1;
+//     if (sigma == 0 && x[0] >= 0) {
+//         beta = 0.0;
+//     } else if (sigma == 0 && x[0] < 0) {
+//         beta = -2.0;
+//     } else {
+//         float mu = sqrt(x[0]*x[0] + sigma);
+//         if (x[0] <= 0) {
+//             v[0] = x[0] - mu;
+//         } else {
+//             v[0] = -sigma / (x[0] + mu);
+//         }
+//         beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
+//         float v0 = v[0];
+//         if (v0 != 0) {
+//             for (int i = 0; i < m; i++) {
+//                 v[i] = v[i]/v0;
+//             }
+//         }
+//         else {
+//             for (int i = 0; i < m; i++) {
+//                 v[i] = 0;
+//             }
+//         }
+//     }
+//     return beta;
+// }
+
+float house(int m, float* x, float* v){
+    float xNorm = 0;
+    for (int i = 0; i < m; i++){
+        xNorm += x[i] * x[i];
     }
-    memcpy(v, x, m * sizeof(float));
-    v[0] = 1;
-    if (sigma == 0 && x[0] >= 0) {
-        beta = 0;
-    } else if (sigma == 0 && x[0] < 0) {
-        beta = -2;
-    } else {
-        float mu = sqrt(x[0]*x[0] + sigma);
-        if (x[0] <= 0) {
-            v[0] = x[0] - mu;
-        } else {
-            v[0] = -sigma / (x[0] + mu);
-        }
-        beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
-        float v0 = v[0];
-        if (v0 != 0) {
-            for (int i = 0; i < m; i++) {
-                v[i] = v[i]/v0;
-            }
-        }
+    xNorm = sqrt(xNorm);
+    float e1[m];
+    memset(e1, 0, m * sizeof(float));
+    e1[0] = 1;
+    float sign = (x[0] >= 0) ? 1 : -1;
+    for (int i = 0; i < m; i++){
+        v[i] = x[i] + sign * xNorm * e1[i];
     }
+    float vtv = 0;
+    for (int i = 0; i < m; i++){
+        vtv += v[i] * v[i];
+    }
+    float beta = 2 / vtv;
     return beta;
 }
 
 // A: m x n
 void houseHolderQR(float* A, int m, int n){
-    for (int j = 0; j < 1; j ++){
+    for (int j = 0; j < n; j ++){
         float *v = (float*)malloc((m-j)*sizeof(float));
         float *x = (float*)malloc((m-j)*sizeof(float));
         for (int i = j; i < m; i++){
@@ -64,13 +90,6 @@ void houseHolderQR(float* A, int m, int n){
         free(A_sub);
         free(H);
         free(A_sub_updated);
-        if ( j < m - 1) {
-            int v_index = 1;
-            for (int i = j+1; i < m; i++){
-                A[i*n+j] = v[v_index];
-                v_index++;
-            }
-        }
     }
 }
 
@@ -108,7 +127,7 @@ float* houseHolderHelper(float beta, float* v, int m){
 }
 
 void test_house() {
-    float x[3] = {1, 2, 2};
+    float x[3] = {2, 2, 1};
     float v[3] = {0, 0, 0};
     float beta = house(3, x, v);
     for (int i = 0; i < 3; i++) {
@@ -118,9 +137,10 @@ void test_house() {
 }
 
 void test_houseHolderHelper() {
-    float v[3] = {1, -1, -1};
-    float beta = 2.0 / 3.0;
+    float v[3] = {5, 2, 1};
+    float beta = 2.0/30.0;
     float* result = houseHolderHelper(beta, v, 3);
+
     printf("result:\n");
     for (int i = 0; i < 3; i++){
         for (int j = 0; j < 3; j++){
@@ -144,6 +164,6 @@ void test_houseHolder() {
 
 int main() {
     // test_house();
-    // test_houseHolderHelper();
+    // test_houseHolderHelper()
     test_houseHolder();
 }
