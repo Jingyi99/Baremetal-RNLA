@@ -132,6 +132,23 @@ float* houseHolderHelper(float beta, float* v, int m){
     return result;
 }
 
+float* householderQRLSsolver(float* A, float* b, int m, int n){
+    houseHolderQR(A, m, n);
+    // solve Rx = Q^Tb
+}
+
+float* backSubstitution(float* R, float* y, int m, int n){
+    float* x = (float*)malloc(n*sizeof(float));
+    for (int i = n-1; i >= 0; i--){
+        float sum = 0;
+        for (int j = i+1; j < n; j++){
+            sum += R[i*n+j] * x[j];
+        }
+        x[i] = (y[i] - sum) / R[i*n+i];
+    }
+    return x;
+}
+
 void test_house() {
     float x[3] = {1, 2, 2};
     float v[3] = {0, 0, 0};
