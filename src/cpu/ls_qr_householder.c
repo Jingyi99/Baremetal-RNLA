@@ -3,6 +3,9 @@
 #include <string.h>
 #include "gemm.c"
 
+float house(int m, float* x, float* v);
+float* houseHolderHelper(float beta, float* v, int m);
+
 float house(int m, float* x, float* v) {
     float sigma;
     float beta;
@@ -24,8 +27,10 @@ float house(int m, float* x, float* v) {
         }
         beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
         float v0 = v[0];
-        for (int i = 0; i < m; i++) {
-            v[i] = v[i]/v0;
+        if (v0 != 0) {
+            for (int i = 0; i < m; i++) {
+                v[i] = v[i]/v0;
+            }
         }
     }
     return beta;
@@ -33,7 +38,7 @@ float house(int m, float* x, float* v) {
 
 // A: m x n
 void houseHolderQR(float* A, int m, int n){
-    for (int j = 0; j < n; j ++){
+    for (int j = 0; j < 1; j ++){
         float *v = (float*)malloc((m-j)*sizeof(float));
         float *x = (float*)malloc((m-j)*sizeof(float));
         for (int i = j; i < m; i++){
@@ -41,7 +46,7 @@ void houseHolderQR(float* A, int m, int n){
         } 
         float beta = house(m-j, x, v);
         // update A
-        // float* H = houseHolderHelper(beta, v, m-j);
+        float* H = houseHolderHelper(beta, v, m-j);
         // need to multiply by A submatrix which is m-j x n-j
         float *A_sub = (float*)malloc((m-j)*(n-j)*sizeof(float));
         float *A_sub_updated = (float*)malloc((m-j)*(n-j)*sizeof(float));
@@ -50,22 +55,22 @@ void houseHolderQR(float* A, int m, int n){
                 A_sub[(i-j)*(n-j) + k-j] = A[i*n+k];
             }
         }
-        // gemm(A_sub_updated, H, A_sub, m-j, n-j, m-j);
-        // for (int i = j; i < m; i++){
-        //     for (int k = j; k < n; k++){
-        //         A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
-        //     }
-        // }
-        // free(A_sub);
-        // free(H);
-        // free(A_sub_updated);
-        // if ( j < m ){
-        //     int v_index = 1;
-        //     for (int i = j+1; i < m; i++){
-        //         A[i*n+j] = v[v_index];
-        //         v_index++;
-        //     }
-        // }
+        gemm(A_sub_updated, H, A_sub, m-j, n-j, m-j);
+        for (int i = j; i < m; i++){
+            for (int k = j; k < n; k++){
+                A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
+            }
+        }
+        free(A_sub);
+        free(H);
+        free(A_sub_updated);
+        if ( j < m - 1) {
+            int v_index = 1;
+            for (int i = j+1; i < m; i++){
+                A[i*n+j] = v[v_index];
+                v_index++;
+            }
+        }
     }
 }
 
@@ -85,15 +90,17 @@ float* houseHolderHelper(float beta, float* v, int m){
     float* vvT = (float*)malloc(m*m*sizeof(float));
     gemm(vvT, v, v, m, m, 1);
     // print out vvT
+    // printf("vvT:\n");
     // for (int i = 0; i < m; i++){
     //     for (int j = 0; j < m; j++){
     //         printf("%f ", vvT[i*m+j]);
     //     }
     //     printf("\n");
     // }
+    // printf("beta: %f\n", beta);
     for (int i = 0; i < m; i++){
         for (int j = 0; j < m; j++){
-            printf("i: %d, j:%d, vvt:%f\n", i, j, beta * vvT[i*m+j]);
+            // printf("i: %d, j:%d, vvt:%f\n", i, j, beta * vvT[i*m+j]);
             result[i*m+j] = idenityMatrix[i*m+j] - beta * vvT[i*m+j];
         }
     }
@@ -112,8 +119,9 @@ void test_house() {
 
 void test_houseHolderHelper() {
     float v[3] = {1, -1, -1};
-    float beta = 1/2;
+    float beta = 2.0 / 3.0;
     float* result = houseHolderHelper(beta, v, 3);
+    printf("result:\n");
     for (int i = 0; i < 3; i++){
         for (int j = 0; j < 3; j++){
             printf("%f ", result[i*3+j]);
@@ -125,6 +133,7 @@ void test_houseHolderHelper() {
 void test_houseHolder() {
     float A[9] = {2, -2, 18, 2, 1, 0, 1, 2, 0};
     houseHolderQR(A, 3, 3);
+    printf("result:\n");
     for (int i = 0; i < 3; i++){
         for (int j = 0; j < 3; j++){
             printf("%f ", A[i*3+j]);
@@ -135,12 +144,6 @@ void test_houseHolder() {
 
 int main() {
     // test_house();
-    test_houseHolderHelper();
-    // test_houseHolder();
+    // test_houseHolderHelper();
+    test_houseHolder();
 }
-
-// void least_squares(int m, int n, float * a_matrix, float* b, float *x ) {
-//     for (int j = 0; j < n; j++) {
-
-//     }
-// }
