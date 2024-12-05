@@ -62,37 +62,49 @@ float house(int m, float* x, float* v){
     return beta;
 }
 
-// A: m x n
+// // A: m x n
+// void houseHolderQR(float* A, int m, int n){
+//     for (int j = 0; j < 1; j ++){
+//         float *v = (float*)malloc((m-j)*sizeof(float));
+//         float *x = (float*)malloc((m-j)*sizeof(float));
+//         for (int i = j; i < m; i++){
+//             x[i-j] = A[i*n+j];
+//         } 
+//         float beta = house(m-j, x, v);
+//         // update A
+//         float* H = houseHolderHelper(beta, v, m-j);
+//         // need to multiply by A submatrix which is m-j x n-j
+//         float *A_sub = (float*)malloc((m-j)*(n-j)*sizeof(float));
+//         float *A_sub_updated = (float*)malloc((m-j)*(n-j)*sizeof(float));
+//         for (int i = j; i < m; i++){
+//             for (int k = j; k < n; k++){
+//                 A_sub[(i-j)*(n-j) + k-j] = A[i*n+k];
+//             }
+//         }
+//         gemm(A_sub_updated, H, A_sub, m-j, n-j, m-j);
+//         for (int i = j; i < m; i++){
+//             for (int k = j; k < n; k++){
+//                 A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
+//             }
+//         }
+//         free(A_sub);
+//         free(H);
+//         free(A_sub_updated);
+//     }
+// }
+
 void houseHolderQR(float* A, int m, int n){
-    for (int j = 0; j < n; j ++){
+    for (int j = 0; j < n; j++){
         float *v = (float*)malloc((m-j)*sizeof(float));
         float *x = (float*)malloc((m-j)*sizeof(float));
         for (int i = j; i < m; i++){
             x[i-j] = A[i*n+j];
         } 
         float beta = house(m-j, x, v);
-        // update A
-        float* H = houseHolderHelper(beta, v, m-j);
-        // need to multiply by A submatrix which is m-j x n-j
-        float *A_sub = (float*)malloc((m-j)*(n-j)*sizeof(float));
-        float *A_sub_updated = (float*)malloc((m-j)*(n-j)*sizeof(float));
-        for (int i = j; i < m; i++){
-            for (int k = j; k < n; k++){
-                A_sub[(i-j)*(n-j) + k-j] = A[i*n+k];
-            }
-        }
-        gemm(A_sub_updated, H, A_sub, m-j, n-j, m-j);
-        for (int i = j; i < m; i++){
-            for (int k = j; k < n; k++){
-                A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
-            }
-        }
-        free(A_sub);
-        free(H);
-        free(A_sub_updated);
+        gemm(A, H, A, m, n, m-j);
+
     }
 }
-
 
 float* houseHolderHelper(float beta, float* v, int m){
     float* result = (float*)malloc(m*m*sizeof(float));
@@ -151,12 +163,14 @@ void test_houseHolderHelper() {
 }
 
 void test_houseHolder() {
-    float A[9] = {2, -2, 18, 2, 1, 0, 1, 2, 0};
-    houseHolderQR(A, 3, 3);
+    float A[12] = {1.0f, -1.0f, 4.0f, 1.0f, 4.0f, -2.0f, 1.0f, 4.0f, 2.0f, 1.0f, -1.0f, 0.0f};
+    int m = 4;
+    int n = 3;
+    houseHolderQR(A, m, n);
     printf("result:\n");
-    for (int i = 0; i < 3; i++){
-        for (int j = 0; j < 3; j++){
-            printf("%f ", A[i*3+j]);
+    for (int i = 0; i < m; i++){
+        for (int j = 0; j < n; j++){
+            printf("%f ", A[i*m+j]);
         }
         printf("\n");
     }
