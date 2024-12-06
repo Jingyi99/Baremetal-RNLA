@@ -34,15 +34,15 @@ def generate_sparse_dense(left, P, M, K, N, dtype=float, f=sys.stdout):
 
     dtype_str = "float" if dtype==float else "int"
     gen_rand = lambda a, b : np.random.rand(a,b) if (dtype == float) else np.random.randint(-10, 11, size=(a, b))
-    S = random(P, M, density=0.3, dtype=dtype, format="csc", data_rvs=lambda s: gen_rand(1,s).flatten())
+    A = random(M, K, density=0.3, dtype=dtype, format="csc", data_rvs=lambda s: gen_rand(1,s).flatten())
 
     solved = False
     while(not solved):
         # Form known matrices
-        A = gen_rand(M,K)
+        S = gen_rand(P,M)
         B = gen_rand(M,N)
-        SA = np.asarray(np.matmul(S.todense(),A))
-        SB = np.asarray(np.matmul(S.todense(),B))
+        SA = np.asarray(np.matmul(S,A.todense()))
+        SB = np.asarray(np.matmul(S,B))
 
         #A = np.random.randint(-10, 11, size=(K, N))
         #SA = np.array(np.dot(S.todense(), A))
@@ -72,15 +72,19 @@ def generate_sparse_dense(left, P, M, K, N, dtype=float, f=sys.stdout):
           f'#define N {N}\n' +
           f'#define P {P}\n\n' +
           f'typedef {dtype_str} data_t;\n', file=f)
-    print_array('static int S_cptr',    S.indptr,     M+1,   data_fmt='{}', f=f)
-    print_array('static int S_ind',     S.indices,    S.nnz, data_fmt='{}', f=f)
-    print_array('static data_t S_data', S.data,       S.nnz, data_fmt='{}', f=f)
-    print_mat_as_c_array('static data_t A',  A,  'M', 'K', f=f)
+    # print_array('static int S_cptr',    S.indptr,     K+1,   data_fmt='{}', f=f)
+    # print_array('static int S_ind',     S.indices,    S.nnz, data_fmt='{}', f=f)
+    # print_array('static data_t S_data', S.data,       S.nnz, data_fmt='{}', f=f)
+
+    print_mat_as_c_array('static data_t S',  S,  'P', 'M', f=f)
+    print_array('static int A_cptr',    A.indptr,     M+1,   data_fmt='{}', f=f)
+    print_array('static int A_ind',     A.indices,    A.nnz, data_fmt='{}', f=f)
+    print_array('static data_t A_data', A.data,       A.nnz, data_fmt='{}', f=f)
     print_mat_as_c_array('static data_t B',  B,  'M', 'N', f=f)
     print_mat_as_c_array('static data_t X',  X,  'K', 'N', f=f)
     print_mat_as_c_array('static data_t SA', SA, 'P', 'K', f=f)
     print_mat_as_c_array('static data_t SB', SB, 'P', 'N', f=f)
-    print_mat_as_c_array('static data_t S_dense',  np.array(S.todense()), 'P', 'M', f=f)
+    print_mat_as_c_array('static data_t A_dense',  np.array(A.todense()), 'P', 'M', f=f)
 
     return np.allclose(np.matmul(SA,X), SB)
 
