@@ -115,11 +115,6 @@ float* houseHolderHelper(float beta, float* v, int m){
     return result;
 }
 
-float* householderQRLSsolver(float* A, float* b, int m, int n){
-    houseHolderQR(A, m, n);
-    // solve Rx = Q^Tb
-}
-
 float* backSubstitution(float* R, float* y, int m, int n){
     float* x = (float*)malloc(n*sizeof(float));
     for (int i = n-1; i >= 0; i--){
@@ -131,6 +126,58 @@ float* backSubstitution(float* R, float* y, int m, int n){
     }
     return x;
 }
+
+void houseHolderQRb(float* A, float* b, int m, int n) {
+    for (int j = 0; j < n; j ++){
+        float *v = (float*)malloc((m-j)*sizeof(float));
+        float *x = (float*)malloc((m-j)*sizeof(float));
+        for (int i = j; i < m; i++){
+            x[i-j] = A[i*n+j];
+        }
+        float beta = house(m-j, x, v);
+        // update A
+        float* H = houseHolderHelper(beta, v, m-j);
+        float* b_sub = (float*) malloc((m-j)*sizeof(float));
+        float* b_sub_updated = (float*) malloc((m-j)*sizeof(float));
+        memcpy(b_sub, &b[j], sizeof(float)*(m-j));
+        gemm(b_sub_updated, H, b_sub, m-j, 1, m-j);
+        for (int i = j; i < m; i++){
+            b[i] = b_sub_updated[i-j];
+        }
+        // memcpy(&b[j], b_sub, sizeof(float)*(m-j));
+        // multiply by A submatrix which is m-j * n-j
+        float *A_sub = (float*)malloc((m-j)*(n-j)*sizeof(float));
+        float *A_sub_updated = (float*)malloc((m-j)*(n-j)*sizeof(float));
+        for (int i = j; i < m; i++){
+            for (int k = j; k < n; k++){
+                A_sub[(i-j)*(n-j) + k-j] = A[i*n+k];
+            }
+        }
+        gemm(A_sub_updated, H, A_sub, m-j, n-j, m-j);
+        for (int i = j; i < m; i++){
+            for (int k = j; k < n; k++){
+                A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
+            }
+        }
+        free(A_sub);
+        free(A_sub_updated);
+        free(H);
+        free(v);
+        free(x);
+        free(b_sub);
+        free(b_sub_updated);
+    }
+}
+
+float* householderQRLS(float* A, float* b, int m, int n){
+    houseHolderQRb(A, b, m, n);
+    // now b is updated to QTb and A is updated to R
+    // solve Rx = Q^Tb
+
+    return backSubstitution(A, b, m, n);
+}
+
+
 
 void test_house() {
     // set test cases here
@@ -201,8 +248,39 @@ void test_houseHolderQR() {
     }
 }
 
+void test_backSubstitution() {
+    // set test case here
+    int m = 3;
+    int n = 3;
+    float R[] = {1.0f, -2.0f, 1.0f, 0.0f, 1.0f, 6.0f, 0.0f, 0.0f, 1.0f};
+    float y[] = {4.0f, -1.0f, 2.0f};
+    float *x = backSubstitution(R, y, m, n);
+    printf("x: \n");
+    for (int i = 0; i < n; i++) {
+        printf("%f ", x[i]);
+    }
+    printf("\n");
+}
+
+void test_houseHolderQRLS() {
+    int m = 3;
+    int n = 2;
+    float A[] = {1.0, -4.0, 2.0, 3.0, 2.0, 2.0};
+    float b[] = {1.0, 2.0, 1.0};
+
+    float *x = (float*) malloc(sizeof(float) * n);
+    x = householderQRLS(A, b, m, n);
+    printf("x: \n");
+    for (int i = 0; i < n; i++) {
+        printf("%f ", x[i]);
+    }
+    printf("\n");
+}
+
 int main() {
     // test_house();
     // test_houseHolderHelper();
-    test_houseHolderQR();
+    // test_houseHolderQR();
+    // test_backSubstitution();
+    test_houseHolderQRLS();
 }
