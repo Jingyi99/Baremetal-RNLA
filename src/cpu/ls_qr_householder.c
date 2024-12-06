@@ -173,12 +173,10 @@ float* householderQRLS(float* A, float* b, int m, int n){
     houseHolderQRb(A, b, m, n);
     // now b is updated to QTb and A is updated to R
     // solve Rx = Q^Tb
-
     return backSubstitution(A, b, m, n);
 }
 
-
-
+// TODO: Move tests to another file
 void test_house() {
     // set test cases here
     int m = 3;
