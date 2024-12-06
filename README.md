@@ -15,7 +15,7 @@ spike ./build/test_cpu
 
 ```bash
 # make sure $RISCV is set
-cmake -S ./ -B ./build/
+cmake -S ./ -B ./build/ -D RISCV_V=ON
 cmake --build ./build
 spike --isa=rv64gcv_zicntr --varch=vlen:512,elen:32 ./build/test_rvv
 ```
