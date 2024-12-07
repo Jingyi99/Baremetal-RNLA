@@ -7,7 +7,7 @@ include(${CMAKE_SOURCE_DIR}/rnla.cmake)
 set(BMRNLA_CMAKE_PATH_INCLUDE_PATH ${BMRNLA_CMAKE_PATH}/src/${USE_TYPE} CACHE STRING "BMRNLA include path")
 
 option(RISCV_V              "Use RISCV vector extension"        OFF)
-
+option(NANO                 "Use htif_nano only (supports printf with floats)" OFF)
 
 add_library(target-riscv INTERFACE)
 target_compile_features(target-riscv INTERFACE c_std_11)
@@ -32,11 +32,13 @@ if (NOT DEFINED LINKER_SCRIPT)
 endif()
 
 target_compile_options(target-riscv INTERFACE -fno-common -fno-builtin-printf)
+target_compile_options(target-riscv INTERFACE -static -u _printf_float)
 target_compile_options(target-riscv INTERFACE -march=${ARCH} -mabi=${ABI} -mcmodel=${CMODEL})
 target_compile_options(target-riscv INTERFACE -Wl,-Map=output.map ${SPEC_FLAGS})
 target_compile_options(target-riscv INTERFACE -T ${LINKER_SCRIPT})
 
-target_link_options(target-riscv INTERFACE -static)
+target_link_options(target-riscv INTERFACE -static -u _printf_float)
+target_link_options(target-riscv INTERFACE -fno-common -fno-builtin-printf)
 target_link_options(target-riscv INTERFACE -march=${ARCH} -mabi=${ABI} -mcmodel=${CMODEL})
 target_link_options(target-riscv INTERFACE -Wl,-Map=output.map ${SPEC_FLAGS})
 target_link_options(target-riscv INTERFACE -T ${LINKER_SCRIPT})
