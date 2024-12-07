@@ -20,9 +20,9 @@ def print_array(name, data, data_size, data_type='float', data_fmt='{}', fold=10
 # k_dim = a_csc.shape[0]
 # n_dim = a_csc.shape[1]
 # m_dim = n_dim
-m_dim = 21
-n_dim = 21
-k_dim = 21
+m_dim = 30
+n_dim = 20
+k_dim = 1
 
 def print_header(dtype):
     print(f'''#define M_DIM {m_dim}
@@ -31,6 +31,16 @@ def print_header(dtype):
           
           typedef {dtype} data_t;
           ''')
+    
+def generate_dense_ls(m_dim, n_dim):
+    a_mat = np.random.randint(-10, 11, size=(m_dim, n_dim))
+    b_vec = np.random.randint(-10, 11, size=(m_dim, 1))
+    x, residuals, rank, s = np.linalg.lstsq(a_mat, b_vec, rcond=None)
+    print_header("float")
+    print_array('static data_t a_matrix', a_mat.flatten(), 'M_DIM*N_DIM')
+    print_array('static data_t b_vec', b_vec.flatten(), m_dim)
+    print_array('static data_t x_vec', x.flatten(), n_dim)
+
 
 def generate_sparse_dense(m_dim, n_dim, k_dim):
     a_mat = random(m_dim, k_dim, density=0.3, dtype=int, format="csc", data_rvs=lambda s: np.random.randint(-10, 11, size=s))
@@ -64,8 +74,8 @@ def generate_dense_sparse(m_dim, n_dim, k_dim):
     print_array('static data_t b_matrix_data', b_data, b_mat.nnz)
     print_array('static data_t verify_data', verify_data.flatten(), 'M_DIM*N_DIM')
 
-generate_dense_sparse(m_dim, n_dim, k_dim)
-
+# generate_dense_sparse(m_dim, n_dim, k_dim)
+generate_dense_ls(m_dim, n_dim)
 
 
 

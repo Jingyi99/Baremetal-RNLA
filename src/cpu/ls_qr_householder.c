@@ -275,10 +275,10 @@ void test_houseHolderQRLS() {
     printf("\n");
 }
 
-int main() {
-    // test_house();
-    // test_houseHolderHelper();
-    // test_houseHolderQR();
-    // test_backSubstitution();
-    test_houseHolderQRLS();
-}
+// int main() {
+//     // test_house();
+//     // test_houseHolderHelper();
+//     // test_houseHolderQR();
+//     // test_backSubstitution();
+//     test_houseHolderQRLS();
+// }
