@@ -17,20 +17,28 @@ void print_matrix(float* A, int r, int c) {
   }
 }
 
-
-
-// Reinterprets bits as float with significand being
-// 23 MSbs of rand_num
-static inline vuint32m8_t rand2float_32(vuint32m8_t rand_num) {
+/* 
+ * Generate random float (-1,1) from PRNG with significand being
+ * 23 MSbs of rand_num
+ *
+ * rand_num - output from PRNG
+ */
+static inline vfloat32m8_t rand2float_32(vuint32m8_t rand_num) {
   size_t vl = __riscv_vsetvl_e32m8(32);
 
   vuint32m8_t res;
+  vfloat32m8_t resf;
   vuint32m8_t exp = __riscv_vmv_v_x_u32m8((0x7F << 23), vl);
   vuint32m8_t sign = __riscv_vsll_vx_u32m8(rand_num, 31, vl); // Sign based on even/odd
-
+  
   res = __riscv_vsrl_vx_u32m8(rand_num, 9, vl);
   res = __riscv_vor_vv_u32m8(res, exp, vl);
   res = __riscv_vor_vv_u32m8(res, sign, vl);
+
+  resf = __riscv_vreinterpret_v_u32m8_f32m8(res);
+  resf = __riscv_vfsub_vf_f32m8(resf, 1.0, vl);
+  signf = __riscv_vreinterpret_v_u32m8_f32m8(sign);
+  return __riscv_vfsgnj_vv_f32m2(resf, signf, vl);
 
   return res;
 }
@@ -101,8 +109,8 @@ int main() {
   for (uint32_t x = 0; x < ceil(M*N/64); x++) {
     x0 = xorshift(x0);
     x1 = xorshift(x1);
-    vuint32m8_t res_float0 = rand2float_32(x0);
-    vuint32m8_t res_float1 = rand2float_32(x1);
+    vfloat32m8_t res_float0 = rand2float_32(x0);
+    vfloat32m8_t res_float1 = rand2float_32(x1);
   
     __riscv_vse32_v_u32m8((uint32_t *) &rand[0] + 64*x, x0, vl);
     __riscv_vse32_v_u32m8((uint32_t *) &rand[0]+32 + 64*x, x1, vl);
