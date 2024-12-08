@@ -17,6 +17,10 @@ set(WRAP_SPECS_FILE     "htif_wrap.specs")
 set(SPECS_FILE          "htif_nano.specs")
 set(SPEC_FLAGS          -specs=${SPECS_FILE} -specs=${WRAP_SPECS_FILE})
 
+if(NANO) # Override default
+  set(SPEC_FLAGS        -specs=${SPECS_FILE})
+endif()
+
 set(ARCH               "rv64gc")
 set(ABI                "lp64d")
 set(CMODEL             "medany")
