@@ -9,9 +9,11 @@ typedef struct  {
   uint32_t s[4];
 } xoshiro128p_state;
 
-static inline float rand2float(uint32_t rand_num) {
+// Generates random float (-1, 1) (i.e. normed)
+static inline float uint2f_normed(uint32_t rand_num) {
   uint32_t tmp;
-  tmp = (rand_num >> 9) | (0x7F << 23);
+  uint32_t msb = (0x1 & rand_num) << 31; // sign depends if even/odd
+  tmp = msb | ((rand_num >> 9) | (0x7E << 23));
   return *((float *)&tmp);
 }
 
@@ -44,7 +46,7 @@ int main() {
   for(int x=0; x < 1e6; x++) {
     if ((x+1) % print_cycle == 1) {
       rand_num = xoshiro128p(&seed);
-      printf("n=%d: %f (%x)[%x]\n", x, rand2float(rand_num), rand_num, rand2float(rand_num));
+      printf("n=%d: %f (%x)[%x]\n", x, uint2f_normed(rand_num), rand_num, uint2f_normed(rand_num));
     }
   }
 
