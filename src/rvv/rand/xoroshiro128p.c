@@ -77,7 +77,6 @@ static inline vfloat32m2_t hadamardrize(vuint64m4_t rand_num, size_t vl) {
  * rand_num - PRNG output (vector reg)
 */
 static inline vfloat32m2_t rand2float_64(vuint64m4_t rand_num, size_t vl) {
-  vuint32m2_t res;
   vuint64m4_t sign = __riscv_vsll_vx_u64m4(rand_num, 63, vl);
   vuint32m2_t sign_32 = __riscv_vnsrl_wx_u32m2(sign, 32, vl);
   vuint32m2_t rand_num32 = __riscv_vnsrl_wx_u32m2(rand_num, 32, vl);
