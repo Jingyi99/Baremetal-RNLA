@@ -71,31 +71,25 @@ static inline vfloat32m2_t hadamardrize(vuint64m4_t rand_num, size_t vl) {
 }
 
 /* 
- * Reinterprets bits as float with significand being
+ * Generate random float (-1,1) from PRNG with significand being
  * 23 MSbs of upper half of rand_num
  *
- * rand_num - vector of results for RNG 
+ * rand_num - PRNG output (vector reg)
 */
 static inline vfloat32m2_t rand2float_64(vuint64m4_t rand_num, size_t vl) {
-  // size_t vl = __riscv_vsetvl_e64m4(32);
-  vuint64m4_t sign = __riscv_vsll_vx_u64m4(rand_num, 63, vl);
-  vl = __riscv_vsetvl_e32m2(32);
-
   vuint32m2_t res;
-  vfloat32m2_t resf;
-  vfloat32m2_t signf;
-  // vuint32m2_t exp = __riscv_vmv_v_x_u32m2((0x7F << 23), vl);
+  vuint64m4_t sign = __riscv_vsll_vx_u64m4(rand_num, 63, vl);
   vuint32m2_t sign_32 = __riscv_vnsrl_wx_u32m2(sign, 32, vl);
   vuint32m2_t rand_num32 = __riscv_vnsrl_wx_u32m2(rand_num, 32, vl);
+  vuint32m2_t res = __riscv_vsrl_vx_u32m2(rand_num32, 9, vl);     // Add significand 
 
-  res = __riscv_vsrl_vx_u32m2(rand_num32, 9, vl);     // Add significand 
+  vl = __riscv_vsetvl_e32m2(32);
   res = __riscv_vor_vx_u32m2(res, (0x7F << 23), vl);  // Add exponent (127)
-  // res = __riscv_vxor_vv_u32m2(res, sign_32, vl);
 
-  vl = __riscv_vsetvl_e64m4(32);
-  resf = __riscv_vreinterpret_v_u32m2_f32m2(res);
+  // Reinterpret as float and change range (-1, 1)
+  vfloat32m2_t resf = __riscv_vreinterpret_v_u32m2_f32m2(res);
   resf = __riscv_vfsub_vf_f32m2(resf, 1.0, vl);
-  signf = __riscv_vreinterpret_v_u32m2_f32m2(sign_32);
+  vfloat32m2_t signf = __riscv_vreinterpret_v_u32m2_f32m2(sign_32);
   return __riscv_vfsgnj_vv_f32m2(resf, signf, vl);
 }
 
