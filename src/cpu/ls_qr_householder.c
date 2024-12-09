@@ -5,8 +5,8 @@
 
 double house(int m, double* x, double* v);
 double* houseHolderHelper(double beta, double* v, int m);
+void test_backwarderror(double* A, double* Q, double* R, int m, int n);
 
-// textbook implementation
 double house(int m, double* x, double* v) {
     double sigma = 0.0;
     double beta = 0.0;
@@ -14,7 +14,7 @@ double house(int m, double* x, double* v) {
         sigma += x[i] * x[i];
     }
     memcpy(v, x, m * sizeof(double));
-    v[0] = 1;
+    v[0] = 1; 
     if (sigma == 0 && x[0] >= 0) {
         beta = 0.0;
     } else if (sigma == 0 && x[0] < 0) {
@@ -24,7 +24,8 @@ double house(int m, double* x, double* v) {
         if (x[0] <= 0) {
             v[0] = x[0] - mu;
         } else {
-            v[0] = -sigma / (x[0] + mu);
+            // v[0] = -sigma / (x[0] + mu);
+            v[0] = x[0] + mu;
         }
         beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
         double v0 = v[0];
@@ -41,24 +42,6 @@ double house(int m, double* x, double* v) {
     }
     return beta;
 }
-
-// more intuitive implementation
-// double house(int m, double* x, double* v){
-//     double xNorm = 0;
-//     for (int i = 0; i < m; i++){
-//         xNorm += x[i] * x[i];
-//     }
-//     xNorm = sqrt(xNorm);
-//     double sign = (x[0] >= 0) ? 1 : -1;
-//     memcpy(v, x, m * sizeof(double));
-//     v[0] = x[0] + sign * xNorm;
-//     double vtv = 0;
-//     for (int i = 0; i < m; i++){
-//         vtv += v[i] * v[i];
-//     }
-//     double beta = 2 / vtv;
-//     return beta;
-// }
 
 void houseHolderQR(double* A, int m, int n){
     for (int j = 0; j < n; j ++){
@@ -122,6 +105,19 @@ double* backSubstitution(double* R, double* y, int m, int n){
         fprintf(stderr, "Invalid matrix dimensions: m must be >= n\n");
         exit(EXIT_FAILURE);
     }
+    // print R 
+    // printf("R:\n");
+    // for (int i = 0; i < m; i++){
+    //     for (int j = 0; j < n; j++){
+    //         printf("%f ", R[i*n+j]);
+    //     }
+    //     printf("\n");
+    // }
+    // print y
+    // printf("y:\n");
+    // for (int i = 0; i < m; i++){
+    //     printf("%f ", y[i]);
+    // }
     double* x = (double*)malloc(n*sizeof(double));
     for (int i = n-1; i >= 0; i--){
         double sum = 0;
@@ -134,20 +130,36 @@ double* backSubstitution(double* R, double* y, int m, int n){
             exit(EXIT_FAILURE);
         }
         x[i] = (y[i] - sum) / R[i*n+i];
+        // printf("row: %d\n x: %lf\n", i, x[i]);
     }
     return x;
 }
 
 void houseHolderQRb(double* A, double* b, int m, int n) {
+    double* Acopy = (double*)malloc(m*n*sizeof(double));
+    memcpy(Acopy, A, m*n*sizeof(double));
     for (int j = 0; j < n; j ++){
         double *v = (double*)malloc((m-j)*sizeof(double));
         double *x = (double*)malloc((m-j)*sizeof(double));
-        for (int i = j; i < m; i++){
-            v[i-j] = A[i*n+j];
+        // printf("col: %d", j);
+        // for (int i = j; i < m; i++){
+        //     v[i-j] = A[i*n+j];
+        //     printf("v: %f\n", v[i-j]);
+        // }
+        // for (int i = j; i < m; i++){
+        //     x[i-j] = A[i*n+j];
+        // }
+        // write v to file 
+        FILE *f = fopen("v.txt", "w");
+        if (f == NULL)
+        {
+            printf("Error opening file!\n");
+            exit(1);
         }
         for (int i = j; i < m; i++){
-            x[i-j] = A[i*n+j];
+            fprintf(f, "%f\n", A[i*n+j]);
         }
+        fclose(f);
         double beta = house(m-j, x, v);
         double* H = houseHolderHelper(beta, v, m-j);
         double* b_sub = (double*) malloc(( m-j) * sizeof(double));
@@ -180,24 +192,15 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         free(b_sub);
         free(b_sub_updated);
         }
+        test_backwarderror(Acopy, A, b, m, n);
     }
+
 
     double* householderQRLS(double* A, double* b, int m, int n){
         houseHolderQRb(A, b, m, n);
-        printf("A: \n");
-        for (int i = 0; i < m; i++){
-            for (int j = 0; j < n; j++){
-                printf("%f ", A[i*n+j]);
-            }
-            printf("\n");
-        }
-        // print b 
-        printf("b: \n");
-        for (int i = 0; i < m; i++){
-            printf("%f ", b[i]);
-        }
         // now b is updated to QTb and A is updated to R
         // solve Rx = Q^Tb
+        
         return backSubstitution(A, b, m, n);
     }
 
@@ -312,6 +315,57 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         printf("%lf ", x[i]);
         }
         printf("\n");
+    }
+
+    void test_backwarderror(double* A, double* Q, double* R, int m, int n){
+        // print R 
+        FILE *file = fopen("R_matrix.txt", "w");
+        if (file == NULL) {
+            fprintf(stderr, "Error opening file for writing\n");
+            return;
+        }
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                fprintf(file, "%f ", R[i * n + j]);
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        // print Q
+        file = fopen("Q_matrix.txt", "w");
+        if (file == NULL) {
+            fprintf(stderr, "Error opening file for writing\n");
+            return;
+        }
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < m; j++) {
+                fprintf(file, "%f ", Q[i * m + j]);
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        // print (A - qr) / A
+        double* qr = (double*)malloc(m*n*sizeof(double));
+        gemm(qr, Q, R, m, n, n);
+        double error = 0;
+        double residual = 0;
+        for (int i = 0; i < m; i++){
+            for (int j = 0; j < n; j++){
+                residual += (A[i*n+j] - qr[i*n+j]) * (A[i*n+j] - qr[i*n+j]);
+            }
+        }
+        residual = sqrt(residual);
+        printf("residual: %f\n", residual);
+        double normA = 0;
+        for (int i = 0; i < m; i++){
+            for (int j = 0; j < n; j++){
+                normA += A[i*n+j] * A[i*n+j];
+            }
+        }
+        normA = sqrt(normA);
+        printf("normA: %f\n", normA);
+        error = residual / normA;
+        printf("backward error: %f\n", error);
     }
 
     // int main() {
