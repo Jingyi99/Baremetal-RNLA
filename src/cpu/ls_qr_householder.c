@@ -57,8 +57,8 @@ double house(int m, double* x, double* v) {
 
 void houseHolderQR(double* A, int m, int n){
     for (int j = 0; j < n; j ++){
-        double *v = (double*)calloc((m-j)*sizeof(double));
-        double *x = (double*)calloc((m-j)*sizeof(double));
+        double *v = (double*)calloc((m-j), sizeof(double));
+        double *x = (double*)calloc((m-j), sizeof(double));
         for (int i = j; i < m; i++){
             v[i-j] = A[i*n+j];
         }
@@ -68,8 +68,8 @@ void houseHolderQR(double* A, int m, int n){
         double beta = house(m-j, x, v);
         double* H = houseHolderHelper(beta, v, m-j);
         // multiply by A submatrix which is m-j * n-j
-        double *A_sub = (double*)calloc((m-j)*(n-j)*sizeof(double));
-        double *A_sub_updated = (double*)calloc((m-j)*(n-j)*sizeof(double));
+        double *A_sub = (double*)calloc((m-j)*(n-j), sizeof(double));
+        double *A_sub_updated = (double*)calloc((m-j)*(n-j), sizeof(double));
         for (int i = j; i < m; i++){
             for (int k = j; k < n; k++){
                 A_sub[(i-j)*(n-j) + k-j] = A[i*n+k];
