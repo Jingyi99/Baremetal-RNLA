@@ -146,9 +146,9 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         //     v[i-j] = A[i*n+j];
         //     printf("v: %f\n", v[i-j]);
         // }
-        // for (int i = j; i < m; i++){
-        //     x[i-j] = A[i*n+j];
-        // }
+        for (int i = j; i < m; i++){
+            x[i-j] = A[i*n+j];
+        }
         // write v to file 
         FILE *f = fopen("v.txt", "w");
         if (f == NULL)
@@ -161,14 +161,40 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         }
         fclose(f);
         double beta = house(m-j, x, v);
+        printf("v: \n");
+        for (int i = 0; i < m; i++) {
+            printf("%lf ", v[i]);
+        }
+        printf("\n");
         double* H = houseHolderHelper(beta, v, m-j);
         double* b_sub = (double*) malloc(( m-j) * sizeof(double));
         double* b_sub_updated = (double*) malloc((m-j)*sizeof(double));
-        memcpy(b_sub, &b[j], sizeof(double)*(m-j));
-        gemm(b_sub_updated, H, b_sub, m-j, 1, m-j);
-        for (int i = j; i < m; i++){
-            b[i] = b_sub_updated[i-j];
-        } 
+        // memcpy(b_sub, &b[j], sizeof(double)*(m-j));
+        for (int i = 0; i < m-j; i++){
+            b_sub[i] = b[i+j];
+        }
+        // vt*b
+        double vtb = 0.0;
+        for (int i = j; i < m; i++) {
+            vtb += v[i-j] * b[i];
+        }
+        for (int i = j; i < m; i++) {
+            b[i] = b[i] - beta*vtb*v[i-j];
+        }
+        // gemm(b_sub_updated, H, b_sub, m-j, 1, m-j);
+        // for (int i = j; i < m; i++){
+        //     b[i] = b_sub_updated[i-j];
+        // } 
+        printf("b sub:\n");
+        for (int i = 0; i < m-j; i++) {
+            printf("%lf ", b_sub[i]);
+        }
+        printf("\n");
+        printf("b sub updated:\n");
+        for (int i = 0; i < m-j; i++) {
+            printf("%lf ", b_sub_updated[i]);
+        }
+        printf("\n");
         // memcpy(&b[j], b_sub, sizeof(double)*(m-j));
         // multiply by A submatrix which is m-j * n-j
         double *A_sub = (double*)malloc((m-j)*(n-j)*sizeof(double));
@@ -184,6 +210,7 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
             A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
             }
         }
+        
         free(A_sub);
         free(A_sub_updated);
         free(H);
@@ -192,7 +219,6 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         free(b_sub);
         free(b_sub_updated);
         }
-        test_backwarderror(Acopy, A, b, m, n);
     }
 
 
@@ -200,7 +226,19 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         houseHolderQRb(A, b, m, n);
         // now b is updated to QTb and A is updated to R
         // solve Rx = Q^Tb
-        
+        printf("R:\n");
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                printf("%lf ", A[i*n+j]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+        printf("updated b:\n");
+        for (int i = 0; i < m; i++) {
+            printf("%lf ", b[i]);
+        }
+        printf("\n");
         return backSubstitution(A, b, m, n);
     }
 
