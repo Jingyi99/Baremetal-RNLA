@@ -89,8 +89,8 @@ void houseHolderQR(double* A, int m, int n){
             }
         }
         if (j < m) {
-            for (int k = j; k < m; k++) {
-                A[k*n+j] = v[k-j+1];
+            for (int k = j+1; k < m; k++) {
+                A[k*n+j] = v[k-j];
             }
         }
         free(A_sub);
@@ -241,11 +241,18 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
 
     double* householderQRLS(double* A, double* b, int m, int n){
         houseHolderQR(A, m, n);
+        printf("R:\n");
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                printf("%lf ", A[i*n+j]);
+            }
+            printf("\n");
+        }
         for (int j = 0; j < n; j++) {
             double *v = malloc(sizeof(double) * (m-j));
             v[0] = 1.0;
-            for (int k = j; k < m; k++) {
-                v[k-j+1] = A[k*n+j];
+            for (int k = j+1; k < m; k++) {
+                v[k-j] = A[k*n+j];
             }
             double vtv = 0.0;
             for (int i = 0; i < m-j; i++) {
@@ -260,13 +267,6 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
                 b[i] = b[i] - beta*vtb*v[i-j];
             }
         }
-        // printf("R:\n");
-        // for (int i = 0; i < m; i++) {
-        //     for (int j = 0; j < n; j++) {
-        //         printf("%lf ", A[i*n+j]);
-        //     }
-        //     printf("\n");
-        // }
         // printf("\n");
         // printf("updated b:\n");
         // for (int i = 0; i < m; i++) {
