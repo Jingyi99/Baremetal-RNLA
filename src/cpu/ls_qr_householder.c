@@ -118,6 +118,10 @@ float* houseHolderHelper(float beta, float* v, int m){
 float* backSubstitution(float* R, float* y, int m, int n){
     float* x = (float*)malloc(n*sizeof(float));
     for (int i = n-1; i >= 0; i--){
+        if (R[i*n+i] == 0) {
+            printf("BACKSUB: Singular matrix");
+            return x;
+        }
         float sum = 0;
         for (int j = i+1; j < n; j++){
             sum += R[i*n+j] * x[j];
