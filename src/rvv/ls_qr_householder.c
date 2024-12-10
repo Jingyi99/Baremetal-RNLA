@@ -1,11 +1,14 @@
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdbool.h>
 #include <string.h>
+#include <stdlib.h>
 #include "gemm.c"
 #include "riscv_vector.h"
 
 // float house(int m, float* x, float* v);
 // float* houseHolderHelper(float beta, float* v, int m);
+
 
 // // textbook implementation
 // float house(int m, float* x, float* v) {
@@ -117,37 +120,40 @@
 // }
 
 void backSubstitution(float* R, float* y, float* x, int m, int n){
-    // float* x = (float*)malloc(n*sizeof(float));
+    float sum;
     size_t vl;
-    uint32_t i;
-    uint32_t j;
-    uint32_t k;
+    int32_t i;
+    int32_t j;
+    int32_t k;
 
     vfloat32m1_t R_p;
     vfloat32m1_t x_p;
     vfloat32m1_t prod;
     vfloat32m1_t sum_v;
-    float sum;
-
-    j = 1;
 
     // First iteration
     x[m-1] = y[m-1] / R[(m-1)*n+(n-1)];
 
+    j = 1;
     for (i = m-2; i >= 0; i--) {
-        k   = j-1;
-        sum = 0.0;
-        vl  = __riscv_vsetvl_e32m1(k);
-        R_p = __riscv_vle32_v_f32m1(R +i*n+(n-k), vl);
-        x_p = __riscv_vle32_v_f32m1(x + i, vl);
+        k   = j; // also m-i-1
 
+        // Zero sum vector (splat)
+        sum_v = __riscv_vfmv_v_f_f32m1(0.0, 1);
         while (k > 0) {
-            vl = __riscv_vsetvl_e32m1(k);
-            prod = __riscv_vfmul_vv_f32m1(R_p, x_p, vl);
+            vl    = __riscv_vsetvl_e32m1(k);
+            printf("i: %d \tvl: %d\t", i, vl);
+            printf("\tR index: %d\n", (i*n) + (n-k));
+            // Load vectors
+            x_p   = __riscv_vle32_v_f32m1(x + i + 1 + (j-k), vl);
+            R_p   = __riscv_vle32_v_f32m1(R + (i*n) + (n-k), vl);
+            // Dot Product
+            prod  = __riscv_vfmul_vv_f32m1(R_p, x_p, vl);
             sum_v = __riscv_vfredosum_vs_f32m1_f32m1(prod, sum_v, vl);
-            k -= vl;
+            k    -= vl;
         }
-        sum = __riscv_vfmv_f_s_f32m1_f32(sum_v);
+
+        sum  = __riscv_vfmv_f_s_f32m1_f32(sum_v);
         x[i] = (y[i] - sum) / R[i*n+i];
         j++;
     }
@@ -288,17 +294,53 @@ void test_backSubstitution() {
     // set test case here
     int m = 3;
     int n = 3;
-    float R[] = {1.0f, -2.0f, 1.0f, 0.0f, 1.0f, 6.0f, 0.0f, 0.0f, 1.0f};
+    float R[] = {1.0f, -2.0f, 1.0f,
+                 0.0f, 1.0f, 6.0f,
+                 0.0f, 0.0f, 1.0f};
     float y[] = {4.0f, -1.0f, 2.0f};
-    float x[3];
+    float x[3] = {0.0};
+
+    printf("Calling backsubstition\n");
     backSubstitution(R, y, x, m, n);
+
     printf("x: \n");
     for (int i = 0; i < n; i++) {
-        printf("%f ", x[i]);
+        printf("%.3f ", x[i]);
     }
     printf("\n");
-}
 
+    // Test case 2
+    m = 10;
+    n = 10;
+    float R1[10][10] = {{0.328406, 0.592807, 0.963605, 0.047914, 0.583902, 0.663277, 0.821321, 0.467992, 0.441245, 0.869632},
+                        {0.000000, 0.287301, 0.810943, 0.594004, 0.299508, 0.506638, 0.629284, 0.176319, 0.036821, 0.382882},
+                        {0.000000, 0.000000, 0.763557, 0.872771, 0.598384, 0.811528, 0.195214, 0.498635, 0.846730, 0.788322},
+                        {0.000000, 0.000000, 0.000000, 0.097213, 0.924739, 0.795865, 0.976783, 0.776233, 0.022980, 0.135772},
+                        {0.000000, 0.000000, 0.000000, 0.000000, 0.793991, 0.748543, 0.093151, 0.347933, 0.043096, 0.423781},
+                        {0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.656377, 0.284855, 0.594453, 0.233624, 0.298250},
+                        {0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.105906, 0.326819, 0.336461, 0.597929},
+                        {0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.722163, 0.119044, 0.746278},
+                        {0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.246312, 0.922411},
+                        {0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.592532}};
+    float y1[10] = {9, -10,   2,   1, -10,  -3,   4, -15, -15,  -6};
+    float x1[10] = {0.0};    
+    float x1_gold[10] = {-1412.0336846940822, -2328.4704431714517, 1889.3309535190674, -1621.1434792606606, 38.486833695540504, -67.49929122866932, 188.0552272912475, -6.519084264460278, -22.977492873375027, -10.126042145412656};         
+
+    printf("\nTest Case 2: %dx%d\n", m, n);
+    printf("Calling backsubstition\n");
+    backSubstitution(R1[0], y1, x1, m, n);
+
+    printf("x: \n");
+    bool pass = true;
+    for (int i = 0; i < n; i++) {
+        printf("%.3f ", x1[i]);
+        pass |= (x1[i]-x1_gold[i]) < 1e-4;
+    }
+    printf("\n");
+    printf(pass ? "PASS\n" : "FAIL\n");
+
+
+}
 // void test_houseHolderQRLS() {
 //     int m = 3;
 //     int n = 2;
