@@ -7,42 +7,41 @@ double house(int m, double* x, double* v);
 double* houseHolderHelper(double beta, double* v, int m);
 void test_backwarderror(double* A, double* Q, double* R, int m, int n);
 
-double house(int m, double* x, double* v) {
-    double sigma = 0.0;
-    double beta = 0.0;
-    for (int i = 1; i < m; i++) {
-        sigma += x[i] * x[i];
-    }
-    memcpy(v, x, m * sizeof(double));
-    v[0] = 1; 
-    if (sigma == 0 && x[0] >= 0) {
-        beta = 0.0;
-    } else if (sigma == 0 && x[0] < 0) {
-        beta = -2.0;
-    } else {
-        double mu = sqrt(x[0]*x[0] + sigma);
-        if (x[0] <= 0) {
-            v[0] = x[0] - mu;
-        } else {
-            // v[0] = -sigma / (x[0] + mu);
-            v[0] = x[0] + mu;
-        }
-        beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
-        double v0 = v[0];
-        if (v0 != 0) {
-            for (int i = 0; i < m; i++) {
-                v[i] = v[i]/v0;
-            }
-        }
-        else {
-            for (int i = 0; i < m; i++) {
-                v[i] = 0;
-            }
-        }
-    }
-    return beta;
-}
-
+// double house(int m, double* x, double* v) {
+//     double sigma = 0.0;
+//     double beta = 0.0;
+//     for (int i = 1; i < m; i++) {
+//         sigma += x[i] * x[i];
+//     }
+//     memcpy(v, x, m * sizeof(double));
+//     v[0] = 1; 
+//     if (sigma == 0 && x[0] >= 0) {
+//         beta = 0.0;
+//     } else if (sigma == 0 && x[0] < 0) {
+//         beta = -2.0;
+//     } else {
+//         double mu = sqrt(x[0]*x[0] + sigma);
+//         if (x[0] <= 0) {
+//             v[0] = x[0] - mu;
+//         } else {
+//             v[0] = -sigma / (x[0] + mu);
+//             // v[0] = x[0] + mu;
+//         }
+//         beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
+//         double v0 = v[0];
+//         if (v0 != 0) {
+//             for (int i = 0; i < m; i++) {
+//                 v[i] = v[i]/v0;
+//             }
+//         }
+//         else {
+//             for (int i = 0; i < m; i++) {
+//                 v[i] = 0;
+//             }
+//         }
+//     }
+//     return beta;
+// }
 
 void houseHolderQR(double* A, int m, int n){
     for (int j = 0; j < n; j ++){
@@ -76,6 +75,23 @@ void houseHolderQR(double* A, int m, int n){
         free(v);
         free(x);
     }
+}
+
+double house(int m, double* x, double* v){
+    double xNorm = 0;
+    for (int i = 0; i < m; i++){
+        xNorm += x[i] * x[i];
+    }
+    xNorm = sqrt(xNorm);
+    double sign = (x[0] >= 0) ? 1 : -1;
+    memcpy(v, x, m * sizeof(double));
+    v[0] = x[0] + sign * xNorm;
+    double vtv = 0;
+    for (int i = 0; i < m; i++){
+        vtv += v[i] * v[i];
+    }
+    double beta = 2 / vtv;
+    return beta;
 }
 
 // generate I - beta * v * vT
@@ -150,6 +166,7 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
             }
         }
     }
+    FILE *f = fopen("v.txt", "w");
     for (int j = 0; j < n; j ++){
         double *v = (double*)malloc((m-j)*sizeof(double));
         double *x = (double*)malloc((m-j)*sizeof(double));
@@ -157,7 +174,7 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
             x[i-j] = A[i*n+j];
         }
         // write v to file 
-        FILE *f = fopen("v.txt", "w");
+     
         if (f == NULL)
         {
             printf("Error opening file!\n");
@@ -166,16 +183,41 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         for (int i = j; i < m; i++){
             fprintf(f, "%f\n", A[i*n+j]);
         }
-        fclose(f);
+        fprintf(f, "\n");
         double beta = house(m-j, x, v);
         double* H = houseHolderHelper(beta, v, m-j);
         double* b_sub = (double*) malloc(( m-j) * sizeof(double));
         double* b_sub_updated = (double*) malloc((m-j)*sizeof(double));
-        memcpy(b_sub, &b[j], sizeof(double)*(m-j));
-        gemm(b_sub_updated, H, b_sub, m-j, 1, m-j);
-        for (int i = j; i < m; i++){
-            b[i] = b_sub_updated[i-j];
-        } 
+         for (int i = 0; i < m-j; i++){
+            b_sub[i] = b[i+j];
+        }
+        // vt*b
+        double vtb = 0.0;
+        for (int i = j; i < m; i++) {
+            vtb += v[i-j] * b[i];
+        }
+        for (int i = j; i < m; i++) {
+            b[i] = b[i] - beta*vtb*v[i-j];
+        }
+        // gemm(b_sub_updated, H, b_sub, m-j, 1, m-j);
+        // for (int i = j; i < m; i++){
+        //     b[i] = b_sub_updated[i-j];
+        // } 
+        printf("b sub:\n");
+        for (int i = 0; i < m-j; i++) {
+            printf("%lf ", b_sub[i]);
+        }
+        printf("\n");
+        printf("b sub updated:\n");
+        for (int i = 0; i < m-j; i++) {
+            printf("%lf ", b_sub_updated[i]);
+        }
+        printf("\n");
+        // memcpy(b_sub, &b[j], sizeof(double)*(m-j));
+        // gemm(b_sub_updated, H, b_sub, m-j, 1, m-j);
+        // for (int i = j; i < m; i++){
+        //     b[i] = b_sub_updated[i-j];
+        // } 
         // memcpy(&b[j], b_sub, sizeof(double)*(m-j));
         // multiply by A submatrix which is m-j * n-j
         double *A_sub = (double*)malloc((m-j)*(n-j)*sizeof(double));
@@ -199,6 +241,7 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         free(b_sub);
         free(b_sub_updated);
         }
+        fclose(f);
         double *Qresult = (double*)malloc(m*m*sizeof(double));
         for (int i = n - 1; i >= 0; i--){
             double* H = Harray[i];
@@ -217,7 +260,19 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         houseHolderQRb(A, b, m, n);
         // now b is updated to QTb and A is updated to R
         // solve Rx = Q^Tb
-        
+        printf("R:\n");
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                printf("%lf ", A[i*n+j]);
+            }
+            printf("\n");
+        }
+        printf("\n");
+        printf("updated b:\n");
+        for (int i = 0; i < m; i++) {
+            printf("%lf ", b[i]);
+        }
+        printf("\n");
         return backSubstitution(A, b, m, n);
     }
 
@@ -381,14 +436,7 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         }
         normA = sqrt(normA);
         printf("normA: %f\n", normA);
-        if (normA == 0){
-            error = 0;
-            fprintf(stderr, "normA is 0\n");
-            return;
-        }
-        else{
-            error = residual / normA;
-        }
+        error = residual / normA;
         printf("backward error: %f\n", error);
     }
 
