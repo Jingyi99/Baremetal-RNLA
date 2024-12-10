@@ -20,17 +20,17 @@ def print_array(name, data, data_size, data_type='double', data_fmt='{}', fold=1
 # k_dim = a_csc.shape[0]
 # n_dim = a_csc.shape[1]
 # m_dim = n_dim
-m_dim = 20
-n_dim = 10
+m_dim = 30
+n_dim = 20
 k_dim = 1
 
 def print_header(dtype):
     print(f'''#define M_DIM {m_dim}
-          #define K_DIM {k_dim}
-          #define N_DIM {n_dim}
-          
-          typedef {dtype} data_t;
-          ''')
+#define K_DIM {k_dim}
+#define N_DIM {n_dim}
+
+typedef {dtype} data_t;
+''')
 
 def generate_full_rank_matrix(m_dim, n_dim):
     while True:
