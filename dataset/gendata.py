@@ -21,7 +21,7 @@ def print_array(name, data, data_size, data_type='double', data_fmt='{}', fold=1
 # n_dim = a_csc.shape[1]
 # m_dim = n_dim
 m_dim = 20
-n_dim = 6
+n_dim = 10
 k_dim = 1
 
 def print_header(dtype):
