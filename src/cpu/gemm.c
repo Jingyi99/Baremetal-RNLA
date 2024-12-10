@@ -3,6 +3,14 @@
 void gemm(double *c_matrix, const double *a_matrix, const double *b_matrix,
             const unsigned int m_dim, const unsigned int n_dim,
             const unsigned int k_dim) {
+    // assuming that c_matrix is zero, quick fix
+    // for (int i = 0; i < m_dim; i++) {
+    //     for (int j = 0; j < n_dim; j++) {
+    //         for (int k = 0; k < k_dim; k++) {
+    //             c_matrix[i*n_dim + j] =0.0;
+    //         }
+    //     }
+    // }
     for (int i = 0; i < m_dim; i++) {
         for (int j = 0; j < n_dim; j++) {
             for (int k = 0; k < k_dim; k++) {
