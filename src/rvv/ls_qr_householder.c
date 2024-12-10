@@ -47,22 +47,51 @@
 // }
 
 // // more intuitive implementation
-// // float house(int m, float* x, float* v){
-// //     float xNorm = 0;
-// //     for (int i = 0; i < m; i++){
-// //         xNorm += x[i] * x[i];
-// //     }
-// //     xNorm = sqrt(xNorm);
-// //     float sign = (x[0] >= 0) ? 1 : -1;
-// //     memcpy(v, x, m * sizeof(float));
-// //     v[0] = x[0] + sign * xNorm;
-// //     float vtv = 0;
-// //     for (int i = 0; i < m; i++){
-// //         vtv += v[i] * v[i];
-// //     }
-// //     float beta = 2 / vtv;
-// //     return beta;
-// // }
+float house(int m, float* x, float* v){
+    float xNorm = 0;
+    size_t vl;
+    int32_t i;
+    int32_t j = 0;
+
+    vfloat32m1_t x_p;
+    vfloat32m1_t x_prod;
+    vfloat32m1_t x_sum;
+    vfloat32m1_t x_div;
+    x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
+    for (i = m; i > 0; i-=vl){
+        // xNorm += x[i] * x[i];
+        vl = __riscv_vsetvl_e32m1(i);
+        x_p = __riscv_vle32_v_f32m1(x + j, vl);
+        x_prod = __riscv_vfmul_vv_f32m1(x_p, x_p, vl);
+        x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
+        j += vl;
+    }
+    xNorm = __riscv_vfmv_f_s_f32m1_f32(x_sum);
+    xNorm = sqrt(xNorm);
+    float sign = (x[0] >= 0) ? 1 : -1;
+   
+    // memcpy(v, x, m * sizeof(float));
+    x[0] = x[0] + sign * xNorm;
+    float xtx = 0;
+    float x0 = x[0];
+
+    x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
+    j = 0;
+    for (i = m; i > 0; i-=vl){
+        // v[i] = v[i]/v0;
+        // vtv += v[i] * v[i];
+        vl = __riscv_vsetvl_e32m1(i);
+        x_p = __riscv_vle32_v_f32m1(x + j, vl);
+        x_div = __riscv_vfdiv_vf_f32m1(x_p, x0, vl);
+        __riscv_vse32_v_f32m1(v + j, x_div, vl);
+        x_prod = __riscv_vfmul_vv_f32m1(x_p, x_p, vl);
+        x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
+        j += vl;
+    }
+    xtx = __riscv_vfmv_f_s_f32m1_f32(x_sum);
+    float beta = 2 / xtx;
+    return beta;
+}
 
 // void houseHolderQR(float* A, int m, int n){
 //     for (int j = 0; j < n; j ++){
@@ -221,18 +250,18 @@ void backSubstitution(float* R, float* y, float* x, int m, int n){
 
 
 
-// void test_house() {
-//     // set test cases here
-//     int m = 3;
-//     float x[] = {2, 2, 1};
-//     float v[] = {0, 0, 0};
-//     //
-//     float beta = house(m, x, v);
-//     for (int i = 0; i < m; i++) {
-//         printf("x: %f, v: %f\n", x[i], v[i]);
-//     }
-//     printf("beta: %f\n", beta);
-// }
+void test_house() {
+    // set test cases here
+    int m = 3;
+    float x[] = {2, 2, 1};
+    float v[] = {0, 0, 0};
+    //
+    float beta = house(m, x, v);
+    for (int i = 0; i < m; i++) {
+        printf("x: %f, v: %f\n", x[i], v[i]);
+    }
+    printf("beta: %f\n", beta);
+}
 
 // void test_houseHolderHelper() {
 //     // set test case here
@@ -357,9 +386,9 @@ void test_backSubstitution() {
 // }
 
 int main() {
-    // test_house();
+    test_house();
     // test_houseHolderHelper();
     // test_houseHolderQR();
-    test_backSubstitution();
+    // test_backSubstitution();
     // test_houseHolderQRLS();
 }
