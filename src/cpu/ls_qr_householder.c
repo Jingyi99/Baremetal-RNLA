@@ -43,6 +43,7 @@ double house(int m, double* x, double* v) {
     return beta;
 }
 
+
 void houseHolderQR(double* A, int m, int n){
     for (int j = 0; j < n; j ++){
         double *v = (double*)malloc((m-j)*sizeof(double));
@@ -138,17 +139,23 @@ double* backSubstitution(double* R, double* y, int m, int n){
 void houseHolderQRb(double* A, double* b, int m, int n) {
     double* Acopy = (double*)malloc(m*n*sizeof(double));
     memcpy(Acopy, A, m*n*sizeof(double));
+    double* Harray[n];
+    double* Q = (double*)malloc(m*m*sizeof(double));
+    for (int i = 0; i < m; i++){
+        for (int j = 0; j < m; j++){
+            if (i == j){
+                Q[i*m+j] = 1;
+            } else {
+                Q[i*m+j] = 0;
+            }
+        }
+    }
     for (int j = 0; j < n; j ++){
         double *v = (double*)malloc((m-j)*sizeof(double));
         double *x = (double*)malloc((m-j)*sizeof(double));
-        // printf("col: %d", j);
-        // for (int i = j; i < m; i++){
-        //     v[i-j] = A[i*n+j];
-        //     printf("v: %f\n", v[i-j]);
-        // }
-        // for (int i = j; i < m; i++){
-        //     x[i-j] = A[i*n+j];
-        // }
+        for (int i = j; i < m; i++){
+            x[i-j] = A[i*n+j];
+        }
         // write v to file 
         FILE *f = fopen("v.txt", "w");
         if (f == NULL)
@@ -184,17 +191,27 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
             A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
             }
         }
+        Harray[j] = H;
         free(A_sub);
         free(A_sub_updated);
-        free(H);
         free(v);
         free(x);
         free(b_sub);
         free(b_sub_updated);
         }
-        test_backwarderror(Acopy, A, b, m, n);
+        double *Qresult = (double*)malloc(m*m*sizeof(double));
+        for (int i = n - 1; i >= 0; i--){
+            double* H = Harray[i];
+            gemm(Qresult, Q, H, m, m, m);
+            free(Harray[i]);
+            memcpy(Q, Qresult, m*m*sizeof(double));
+        }
+        free(Acopy);
+        free(Q);
+        free(Qresult);
+        // compute Q
+        test_backwarderror(Acopy, Q, A, m, n);
     }
-
 
     double* householderQRLS(double* A, double* b, int m, int n){
         houseHolderQRb(A, b, m, n);
@@ -364,7 +381,14 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         }
         normA = sqrt(normA);
         printf("normA: %f\n", normA);
-        error = residual / normA;
+        if (normA == 0){
+            error = 0;
+            fprintf(stderr, "normA is 0\n");
+            return;
+        }
+        else{
+            error = residual / normA;
+        }
         printf("backward error: %f\n", error);
     }
 
