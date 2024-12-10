@@ -13,7 +13,7 @@ double house(int m, double* x, double* v) {
     for (int i = 1; i < m; i++) {
         sigma += x[i] * x[i];
     }
-    memcpy(v, x, m * sizeof(double));
+    // memcpy(v, x, m * sizeof(double));
     v[0] = 1; 
     if (sigma == 0 && x[0] >= 0) {
         beta = 0.0;
@@ -24,8 +24,8 @@ double house(int m, double* x, double* v) {
         if (x[0] <= 0) {
             v[0] = x[0] - mu;
         } else {
-            // v[0] = -sigma / (x[0] + mu);
-            v[0] = x[0] + mu;
+            v[0] = -sigma / (x[0] + mu);
+            // v[0] = x[0] + mu;
         }
         beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
         double v0 = v[0];
@@ -34,14 +34,33 @@ double house(int m, double* x, double* v) {
                 v[i] = v[i]/v0;
             }
         }
-        else {
-            for (int i = 0; i < m; i++) {
-                v[i] = 0;
-            }
-        }
+        // else {
+        //     for (int i = 0; i < m; i++) {
+        //         v[i] = 0;
+        //     }
+        // }
     }
     return beta;
 }
+
+// double house(int m, double* x, double* v){
+//     double xNorm = 0;
+//     for (int i = 0; i < m; i++){
+//         xNorm += x[i] * x[i];
+//     }
+//     xNorm = sqrt(xNorm);
+//     double sign = (x[0] >= 0) ? 1 : -1;
+//     memcpy(v, x, m * sizeof(double));
+//     v[0] = x[0] + sign * xNorm;
+//     double vtv = 0;
+//     double v0 = v[0];
+//     for (int i = 0; i < m; i++){
+//         v[i] = v[i]/v0;
+//         vtv += v[i] * v[i];
+//     }
+//     double beta = 2 / vtv;
+//     return beta;
+// }
 
 void houseHolderQR(double* A, int m, int n){
     for (int j = 0; j < n; j ++){
@@ -67,6 +86,11 @@ void houseHolderQR(double* A, int m, int n){
         for (int i = j; i < m; i++){
             for (int k = j; k < n; k++){
                 A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
+            }
+        }
+        if (j < m) {
+            for (int k = j; k < m; k++) {
+                A[k*n+j] = v[k-j+1];
             }
         }
         free(A_sub);
@@ -141,14 +165,13 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
     for (int j = 0; j < n; j ++){
         double *v = (double*)malloc((m-j)*sizeof(double));
         double *x = (double*)malloc((m-j)*sizeof(double));
-        // printf("col: %d", j);
-        // for (int i = j; i < m; i++){
-        //     v[i-j] = A[i*n+j];
-        //     printf("v: %f\n", v[i-j]);
-        // }
+        for (int i = j; i < m; i++){
+            v[i-j] = A[i*n+j];
+        }
         for (int i = j; i < m; i++){
             x[i-j] = A[i*n+j];
         }
+        printf("start of x: %d \n", j*n+j);
         // write v to file 
         FILE *f = fopen("v.txt", "w");
         if (f == NULL)
@@ -190,11 +213,6 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
             printf("%lf ", b_sub[i]);
         }
         printf("\n");
-        printf("b sub updated:\n");
-        for (int i = 0; i < m-j; i++) {
-            printf("%lf ", b_sub_updated[i]);
-        }
-        printf("\n");
         // memcpy(&b[j], b_sub, sizeof(double)*(m-j));
         // multiply by A submatrix which is m-j * n-j
         double *A_sub = (double*)malloc((m-j)*(n-j)*sizeof(double));
@@ -221,26 +239,63 @@ void houseHolderQRb(double* A, double* b, int m, int n) {
         }
     }
 
-
     double* householderQRLS(double* A, double* b, int m, int n){
-        houseHolderQRb(A, b, m, n);
-        // now b is updated to QTb and A is updated to R
-        // solve Rx = Q^Tb
-        printf("R:\n");
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                printf("%lf ", A[i*n+j]);
+        houseHolderQR(A, m, n);
+        for (int j = 0; j < n; j++) {
+            double *v = malloc(sizeof(double) * (m-j));
+            v[0] = 1.0;
+            for (int k = j; k < m; k++) {
+                v[k-j+1] = A[k*n+j];
             }
-            printf("\n");
+            double vtv = 0.0;
+            for (int i = 0; i < m-j; i++) {
+                vtv += v[i] * v[i];
+            }
+            double beta = 2.0/vtv;
+            double vtb = 0.0;
+            for (int i = j; i < m; i++) {
+                vtb += v[i-j] * b[i];
+            }
+            for (int i = j; i < m; i++) {
+                b[i] = b[i] - beta*vtb*v[i-j];
+            }
         }
-        printf("\n");
-        printf("updated b:\n");
-        for (int i = 0; i < m; i++) {
-            printf("%lf ", b[i]);
-        }
-        printf("\n");
+        // printf("R:\n");
+        // for (int i = 0; i < m; i++) {
+        //     for (int j = 0; j < n; j++) {
+        //         printf("%lf ", A[i*n+j]);
+        //     }
+        //     printf("\n");
+        // }
+        // printf("\n");
+        // printf("updated b:\n");
+        // for (int i = 0; i < m; i++) {
+        //     printf("%lf ", b[i]);
+        // }
+        // printf("\n");
         return backSubstitution(A, b, m, n);
     }
+
+
+    // double* householderQRLS(double* A, double* b, int m, int n){
+    //     houseHolderQRb(A, b, m, n);
+    //     // now b is updated to QTb and A is updated to R
+    //     // solve Rx = Q^Tb
+    //     printf("R:\n");
+    //     for (int i = 0; i < m; i++) {
+    //         for (int j = 0; j < n; j++) {
+    //             printf("%lf ", A[i*n+j]);
+    //         }
+    //         printf("\n");
+    //     }
+    //     printf("\n");
+    //     printf("updated b:\n");
+    //     for (int i = 0; i < m; i++) {
+    //         printf("%lf ", b[i]);
+    //     }
+    //     printf("\n");
+    //     return backSubstitution(A, b, m, n);
+    // }
 
     // TODO: Move tests to another file
     void test_house() {
