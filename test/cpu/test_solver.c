@@ -110,6 +110,57 @@
         printf("\n");
     }
 
+    void test_backwarderror(double* A, double* Q, double* R, int m, int n){
+        // print R 
+        FILE *file = fopen("R_matrix.txt", "w");
+        if (file == NULL) {
+            fprintf(stderr, "Error opening file for writing\n");
+            return;
+        }
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                fprintf(file, "%f ", R[i * n + j]);
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        // print Q
+        file = fopen("Q_matrix.txt", "w");
+        if (file == NULL) {
+            fprintf(stderr, "Error opening file for writing\n");
+            return;
+        }
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < m; j++) {
+                fprintf(file, "%f ", Q[i * m + j]);
+            }
+            fprintf(file, "\n");
+        }
+        fclose(file);
+        // print (A - qr) / A
+        double* qr = (double*)malloc(m*n*sizeof(double));
+        gemm(qr, Q, R, m, n, n);
+        double error = 0;
+        double residual = 0;
+        for (int i = 0; i < m; i++){
+            for (int j = 0; j < n; j++){
+                residual += (A[i*n+j] - qr[i*n+j]) * (A[i*n+j] - qr[i*n+j]);
+            }
+        }
+        residual = sqrt(residual);
+        printf("residual: %f\n", residual);
+        double normA = 0;
+        for (int i = 0; i < m; i++){
+            for (int j = 0; j < n; j++){
+                normA += A[i*n+j] * A[i*n+j];
+            }
+        }
+        normA = sqrt(normA);
+        printf("normA: %f\n", normA);
+        error = residual / normA;
+        printf("backward error: %f\n", error);
+    }
+
     // int main() {
     //     // test_house();
     //     // test_houseHolderHelper();
