@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "gemm.c"
+#include "../../dataset/ls/test_ls3.h"
 #include "riscv_vector.h"
 
 // float house(int m, float* x, float* v);
@@ -245,7 +246,7 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
 
         float coeff = beta*vtb;
         for (int i = m; i > j; i-=vl) {
-            vl = __riscv_vsetvl_e32m1(i);
+            vl = __riscv_vsetvl_e32m1(i-j);
             v_vec = __riscv_vle32_v_f32m1(v + ind, vl);
             b_vec = __riscv_vle32_v_f32m1(b + ind + j , vl);
             b_vec = __riscv_vfnmsub_vf_f32m1(v_vec, coeff, b_vec, vl); // b = b - beta*v*v^Tb 
@@ -288,6 +289,9 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
                 vl = __riscv_vsetvl_e32m1(k-j);
                 cpy = __riscv_vle32_v_f32m1(A_sub_updated + i*(n-j) + ind, vl);
                 __riscv_vse32_v_f32m1(A + (i+j)*n + (ind+j), cpy, vl);
+                // if (((i+j)*n + (ind+j) < n) && (i != 0)) {
+                //     printf("BIGGGGGGG WARNINGGGGGGGGGG!!!!!!!!!!!!!!!!!!!");
+                // }
                 ind += vl;
             }
         }
@@ -456,22 +460,23 @@ void test_backSubstitution() {
 }
 
 void test_houseHolderQRLS() {
-    int m = 3;
-    int n = 2;
+    // int m = 3;
+    // int n = 2;
     // float A[] = {1.0, -4.0, 2.0, 3.0, 2.0, 2.0}; // Original
     // float A[] = {2.0, 2.0, 
     //              1.0, -4.0, 
     //              3.0, 2.0};
-    float A[] = {2.0, -4.0, 
-                    2.0, 3.0, 
-                    1.0, 2.0};
-    float b[] = {1.0, 2.0, 1.0};
 
-    float *x = (float*) calloc(n, sizeof(float));
-    x = householderQRLS(A, b, m, n);
+    float *x = (float*) calloc(N_DIM, sizeof(float));
+    x = householderQRLS(a_matrix, b_vec, M_DIM, N_DIM);
 
-    printf("x: \n");
-    for (int i = 0; i < n; i++) {
+    printf("ref x: \n");
+    for (int i = 0; i < N_DIM; i++) {
+        printf("%f ", x_vec[i]);
+    }
+    printf("\n");
+    printf("our x: \n");
+    for (int i = 0; i < N_DIM; i++) {
         printf("%f ", x[i]);
     }
     printf("\n");
