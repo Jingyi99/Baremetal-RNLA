@@ -8,7 +8,15 @@
 
 // float house(int m, float* x, float* v);
 // float* houseHolderHelper(float beta, float* v, int m);
-
+void print_matrix(float* A, int r, int c) {
+  uint32_t i, j;
+  for(i = 0; i < r; i++) {
+    for(j = 0; j < c-1; j++) {
+      printf("%.2f ", *(A + i*c + j));
+    }
+    printf("%.2f\n", *(A + i*c + j));
+  }
+}
 
 // // textbook implementation
 // float house(int m, float* x, float* v) {
@@ -125,29 +133,45 @@ float house(int m, float* x, float* v){
 //     }
 // }
 
-// // generate I - beta * v * vT
-// float* houseHolderHelper(float beta, float* v, int m){
-//     float* result = (float*)malloc(m*m*sizeof(float));
-//     float* idenityMatrix = (float*)malloc(m*m*sizeof(float));
-//     for (int i = 0; i < m; i++){
-//         for (int j = 0; j < m; j++){
-//             if (i == j){
-//                 idenityMatrix[i*m+j] = 1;
-//             } else {
-//                 idenityMatrix[i*m+j] = 0;
-//             }
-//         }
-//     }
-//     float* vvT = (float*)malloc(m*m*sizeof(float));
-//     gemm(vvT, v, v, m, m, 1);
-//     for (int i = 0; i < m; i++){
-//         for (int j = 0; j < m; j++){
-//             result[i*m+j] = idenityMatrix[i*m+j] - beta * vvT[i*m+j];
-//         }
-//     }
-//     return result;
-// }
+// generate I - beta * v * vT
+float* houseHolderHelper(float beta, float* v, int m){
+    size_t vl;
+    float v_beta[m];
+    vfloat32m1_t  v_beta_vec;
+    vfloat32m1_t  res_vec;
+    uint32_t ind =0;
+    for(int x = m; x > 0; x-=vl) {
+        vl = __riscv_vsetvl_e32m1(x);
+        v_beta_vec = __riscv_vle32_v_f32m1(v+ind, vl);
+        v_beta_vec = __riscv_vfmul_vf_f32m1(v_beta_vec, -beta, vl);
+        __riscv_vse32_v_f32m1(v_beta+ind, v_beta_vec, vl);
+        ind += vl;
+    }
 
+    // printf("%f\n",beta);
+    // for (int i = 0; i < m; ++i) {
+    //     printf("v[i]: %f, v_beta[i]: %f\n", v[i], v_beta[i]);
+    // }
+    float* result = (float*)malloc(m*m*sizeof(float));
+    gemm_rvv(result, v, v_beta, m, m, 1); // generate beta*(v x v^T)
+
+    print_matrix(result, m, m);
+
+    ptrdiff_t stride = 4*(m+1);
+
+    float* res_ptr = result;
+    for(int x = m; x > 0; x-=vl) {    
+        vl = __riscv_vsetvl_e32m1(x);    
+        res_vec = __riscv_vlse32_v_f32m1(res_ptr, stride, vl); // Load partial diagonal
+        res_vec = __riscv_vfadd_vf_f32m1(res_vec, 1.0, vl); // Subtract from 1 (I - result)
+        __riscv_vsse32_v_f32m1(res_ptr, stride, res_vec, vl);  // Store partial diagonal
+        res_ptr += vl*m + vl;
+    }
+
+    printf("\n");
+    print_matrix(result, m, m);
+    return result;
+}
 void backSubstitution(float* R, float* y, float* x, int m, int n){
     float sum;
     size_t vl;
@@ -263,33 +287,33 @@ void test_house() {
     printf("beta: %f\n", beta);
 }
 
-// void test_houseHolderHelper() {
-//     // set test case here
-//     int m = 3;
-//     float x[] = {2, 2, 1};
-//     // float v[] = {5, 2, 1};
-//     // float beta = 2.0f / 30.0f;
-//     float v[] = {1, -2, -1};
-//     float beta = 1.0f / 3.0f;
-//     //
-//     float* result = houseHolderHelper(beta, v, m);
+void test_houseHolderHelper() {
+    // set test case here
+    int m = 3;
+    float x[] = {2, 2, 1};
+    // float v[] = {5, 2, 1};
+    // float beta = 2.0f / 30.0f;
+    float v[] = {1, -2, -1};
+    float beta = 1.0f / 3.0f;
+    //
+    float* result = houseHolderHelper(beta, v, m);
 
-//     printf("H:\n");
-//     for (int i = 0; i < m; i++){
-//         for (int j = 0; j < m; j++){
-//             printf("%f ", result[i*m+j]);
-//         }
-//         printf("\n");
-//     }
-//     float *Hx = malloc(sizeof(float) * m);
-//     gemm(Hx, result, x, m, 1, m);
-//     printf("Hx: \n");
-//     for (int i = 0; i < m; i++){
-//         printf("%f ", Hx[i]);
-//     }
-//     printf("\n");
-//     free(Hx);
-// }
+    printf("H:\n");
+    for (int i = 0; i < m; i++){
+        for (int j = 0; j < m; j++){
+            printf("%f ", result[i*m+j]);
+        }
+        printf("\n");
+    }
+    float *Hx = malloc(sizeof(float) * m);
+    gemm_rvv(Hx, result, x, m, 1, m);
+    printf("Hx: \n");
+    for (int i = 0; i < m; i++){
+        printf("%f ", Hx[i]);
+    }
+    printf("\n");
+    free(Hx);
+}
 
 // void test_houseHolderQR() {
 //     // set test case here
@@ -386,8 +410,8 @@ void test_backSubstitution() {
 // }
 
 int main() {
-    test_house();
-    // test_houseHolderHelper();
+    // test_house();
+    test_houseHolderHelper();
     // test_houseHolderQR();
     // test_backSubstitution();
     // test_houseHolderQRLS();
