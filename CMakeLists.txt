@@ -6,7 +6,7 @@ include(${CMAKE_SOURCE_DIR}/rnla.cmake)
 
 set(BMRNLA_CMAKE_PATH_INCLUDE_PATH ${BMRNLA_CMAKE_PATH}/src/${USE_TYPE} CACHE STRING "BMRNLA include path")
 
-option(RISCV_V              "Use RISCV vector extension"        OFF)
+option(RISCV_V              "Use RISCV vector extension"        ON)
 option(NANO                 "Use htif_nano only (supports printf with floats)" OFF)
 
 add_library(target-riscv INTERFACE)
@@ -40,17 +40,20 @@ target_compile_options(target-riscv INTERFACE -static -u _printf_float)
 target_compile_options(target-riscv INTERFACE -march=${ARCH} -mabi=${ABI} -mcmodel=${CMODEL})
 target_compile_options(target-riscv INTERFACE -Wl,-Map=output.map ${SPEC_FLAGS})
 target_compile_options(target-riscv INTERFACE -T ${LINKER_SCRIPT})
+target_compile_options(target-riscv INTERFACE -ffast-math)
 
 target_link_options(target-riscv INTERFACE -static -u _printf_float)
 target_link_options(target-riscv INTERFACE -fno-common -fno-builtin-printf)
 target_link_options(target-riscv INTERFACE -march=${ARCH} -mabi=${ABI} -mcmodel=${CMODEL})
 target_link_options(target-riscv INTERFACE -Wl,-Map=output.map ${SPEC_FLAGS})
 target_link_options(target-riscv INTERFACE -T ${LINKER_SCRIPT})
+target_link_options(target-riscv INTERFACE -ffast-math)
 
 
 message(STATUS "${CMAKE_SOURCE_DIR}")
 
-add_executable(test_cpu test/cpu/test_cpu.c)
+# add_executable(test_cpu test/cpu/test_cpu.c)
+add_executable(test_cpu src/cpu/sketch_n_solve.c)
 add_executable(test_rvv test/rvv/test_rvv.c)
 
 if (RISCV) 
@@ -59,6 +62,7 @@ if (RISCV)
   ./src/cpu/gemm.c
   ./src/cpu/dsgemm.c
   ./src/cpu/randgen.c
+  ./src/cpu/ls_qr_householder.c
   )
 endif()
 
