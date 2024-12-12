@@ -38,6 +38,11 @@ def generate_custom_sparse(m_dim, n_dim, d_dim, type):
     print_array('static int a_matrix_indices', a_indices, len(a_data))
     print_array('static data_t a_matrix_data', a_data, len(a_data))
     print_array('static data_t b_vec', b_vec.flatten(), m_dim)
+    a_array = a_mat.toarray()
+    a_array = a_array.reshape(m_dim, n_dim)
+    x, residuals, rank, s = np.linalg.lstsq(a_array, b_vec, rcond=None)
+    print_array('static data_t x_vec', x.flatten(), n_dim)
+
 
 def generate_defined_matrix(a_data, a_indices, a_indptr, m_dim, n_dim, d_dim, nnz):
     b_vec = np.random.rand(m_dim)
