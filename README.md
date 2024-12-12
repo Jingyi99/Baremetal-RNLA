@@ -20,6 +20,10 @@ cmake --build ./build
 spike --isa=rv64gcv_zicntr --varch=vlen:512,elen:32 ./build/test_rvv
 ```
 
+NOTE: For large matrices you need to increase memory available for spike AND increase heap size in linker script htif.ld. 
+- To increase spike memory allocation use `-m` flag (run `spike -h` to see details)
+- To increase heap size: change line 130 (`PROVIDE(__heap_size = 128K);  `) to appropriate size
+
 ### Dataset generation script
 
 ```bash 
