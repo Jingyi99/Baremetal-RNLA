@@ -3,22 +3,10 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-#include "gemm.c"
-#include "../../dataset/ls/test_ls3.h"
 #include "riscv_vector.h"
+#include "gemm_rvv.h"
 
-// float house(int m, float* x, float* v);
-// float* houseHolderHelper(float beta, float* v, int m);
-void print_matrix(float* A, int r, int c) {
-  uint32_t i, j;
-  for(i = 0; i < r; i++) {
-    for(j = 0; j < c-1; j++) {
-      printf("%.4f ", *(A + i*c + j));
-    }
-    printf("%.4f\n", *(A + i*c + j));
-  }
-  printf("\n");
-}
+// #include "../../dataset/ls/test_ls3.h"
 
 float dot_product(float* x, float* y, int m) {
     size_t vl;
@@ -36,7 +24,7 @@ float dot_product(float* x, float* y, int m) {
         sum = __riscv_vfredosum_vs_f32m1_f32m1(prod, sum, vl);
         j += vl;
     }
-     
+
     return __riscv_vfmv_f_s_f32m1_f32(sum);
 }
 
@@ -100,7 +88,7 @@ float house(int m, float* x, float* v){
     xNorm = dot_product(x, x, m);
     xNorm = sqrt(xNorm);
     float sign = (x[0] >= 0) ? 1 : -1;
-   
+
     // memcpy(v, x, m * sizeof(float));
     x[0] = x[0] + sign * xNorm;
     float xtx = 0;
@@ -140,29 +128,29 @@ float* houseHolderHelper(float beta, float* v, int m){
         ind += vl;
     }
 
-    // printf("%f\n",beta);
+    // // printf("%f\n",beta);
     // for (int i = 0; i < m; ++i) {
-    //     printf("v[i]: %f, v_beta[i]: %f\n", v[i], v_beta[i]);
+    //     // printf("v[i]: %f, v_beta[i]: %f\n", v[i], v_beta[i]);
     // }
 
     float* result = (float*)calloc(m*m, sizeof(float));
     gemm_rvv(result, v, v_beta, m, m, 1); // generate beta*(v x v^T)
 
-    // print_matrix(result, m, m);
+    // // print_matrix(result, m, m);
 
     ptrdiff_t stride = 4*(m+1);
 
     float* res_ptr = result;
-    for(int x = m; x > 0; x-=vl) {    
-        vl = __riscv_vsetvl_e32m1(x);    
+    for(int x = m; x > 0; x-=vl) {
+        vl = __riscv_vsetvl_e32m1(x);
         res_vec = __riscv_vlse32_v_f32m1(res_ptr, stride, vl); // Load partial diagonal
         res_vec = __riscv_vfadd_vf_f32m1(res_vec, 1.0, vl); // Subtract from 1 (I - result)
         __riscv_vsse32_v_f32m1(res_ptr, stride, res_vec, vl);  // Store partial diagonal
         res_ptr += vl*m + vl;
     }
 
-    // printf("\n");
-    // print_matrix(result, m, m);
+    // // printf("\n");
+    // // print_matrix(result, m, m);
     return result;
 }
 
@@ -190,8 +178,8 @@ void backSubstitution(float* R, float* y, float* x, int m, int n){
         sum_v = __riscv_vfmv_v_f_f32m1(0.0, 1);
         while (k > 0) {
             vl    = __riscv_vsetvl_e32m1(k);
-            printf("i: %d \tvl: %d\t", i, vl);
-            printf("\tR index: %d\n", (i*n) + (n-k));
+            // printf("i: %d \tvl: %d\t", i, vl);
+            // printf("\tR index: %d\n", (i*n) + (n-k));
             // Load vectors
             x_p   = __riscv_vle32_v_f32m1(x + i + 1 + (j-k), vl);
             R_p   = __riscv_vle32_v_f32m1(R + (i*n) + (n-k), vl);
@@ -209,7 +197,7 @@ void backSubstitution(float* R, float* y, float* x, int m, int n){
 
 void houseHolderQRb(float* A, float* b, int m, int n) {
     for (int j = 0; j < n; j++){
-        printf("j: %d\n", j);
+        // printf("j: %d\n", j);
 
         float *v = (float*)calloc((m-j), sizeof(float));
         float *x = (float*)calloc((m-j), sizeof(float));
@@ -219,22 +207,22 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
             x[i-j] = A[i*n+j];
         }
         for (int i = 0; i < m-j; i++){
-            printf("BEFORE -- x[%d]: %f v[%d]: %f\n", i, x[i], i, v[i]);
+            // printf("BEFORE -- x[%d]: %f v[%d]: %f\n", i, x[i], i, v[i]);
         }
 
         float beta = house(m-j, x, v);
 
         for (int i = 0; i < m-j; i++){
             // x[i-j] = A[i*n+j];
-            printf("AFTER  -- x[%d]: %f v[%d]: %f\n", i, x[i], i, v[i]);
+            // printf("AFTER  -- x[%d]: %f v[%d]: %f\n", i, x[i], i, v[i]);
         }
-        printf("\n");
+        // printf("\n");
 
         float* H = houseHolderHelper(beta, v, m-j);
 
-        printf("beta: %f\n", beta);
-        printf("H\n");
-        print_matrix(H, m-j, m-j);
+        // printf("beta: %f\n", beta);
+        // printf("H\n");
+        // print_matrix(H, m-j, m-j);
 
         // Compute dot product (v^T,b)
         float vtb = dot_product(v, b+j, m-j);
@@ -249,7 +237,7 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
             vl = __riscv_vsetvl_e32m1(i-j);
             v_vec = __riscv_vle32_v_f32m1(v + ind, vl);
             b_vec = __riscv_vle32_v_f32m1(b + ind + j , vl);
-            b_vec = __riscv_vfnmsub_vf_f32m1(v_vec, coeff, b_vec, vl); // b = b - beta*v*v^Tb 
+            b_vec = __riscv_vfnmsub_vf_f32m1(v_vec, coeff, b_vec, vl); // b = b - beta*v*v^Tb
             __riscv_vse32_v_f32m1(b + ind + j, b_vec, vl);
             ind += vl;
         }
@@ -275,13 +263,13 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
             }
         }
 
-        printf("A_sub\n");
-        print_matrix(A_sub, m-j, n-j);
+        // printf("A_sub\n");
+        // print_matrix(A_sub, m-j, n-j);
 
         gemm_rvv(A_sub_updated, H, A_sub, m-j, n-j, m-j);
 
-        printf("A_sub_updated\n");
-        print_matrix(A_sub_updated, m-j, n-j);
+        // printf("A_sub_updated\n");
+        // print_matrix(A_sub_updated, m-j, n-j);
 
         for (int i = 0; i < m-j; i++) {
             ind = 0;
@@ -289,32 +277,26 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
                 vl = __riscv_vsetvl_e32m1(k-j);
                 cpy = __riscv_vle32_v_f32m1(A_sub_updated + i*(n-j) + ind, vl);
                 __riscv_vse32_v_f32m1(A + (i+j)*n + (ind+j), cpy, vl);
-                // if (((i+j)*n + (ind+j) < n) && (i != 0)) {
-                //     printf("BIGGGGGGG WARNINGGGGGGGGGG!!!!!!!!!!!!!!!!!!!");
-                // }
+
                 ind += vl;
             }
         }
 
-        // for (int i = j; i < m; i++){
-        //     for (int k = j; k < n; k++){
-        //     A[i*n+k] = A_sub_updated[(i-j)*(n-j) + k-j];
-        //     }
-        // }
+
 
         for (int i = 0; i < n; ++i) {
-            printf("b[%d]: %f\n", i, b[i]);
+            // printf("b[%d]: %f\n", i, b[i]);
         }
 
         // debugging
-        printf("A one col should be zeroed out:\n");
+        // printf("A one col should be zeroed out:\n");
         for (int ii = 0; ii < m; ii++) {
             for (int jj = 0; jj < n; jj++) {
-                printf("%lf ", A[ii*n+jj]);
+                // printf("%lf ", A[ii*n+jj]);
             }
-            printf("\n");
+            // printf("\n");
         }
-        printf("\n");
+        // printf("\n");
 
         free(A_sub);
         free(A_sub_updated);
@@ -346,9 +328,9 @@ void test_house() {
     //
     float beta = house(m, x, v);
     for (int i = 0; i < m; i++) {
-        printf("x: %f, v: %f\n", x[i], v[i]);
+        // printf("x: %f, v: %f\n", x[i], v[i]);
     }
-    printf("beta: %f\n", beta);
+    // printf("beta: %f\n", beta);
 }
 
 void test_houseHolderHelper() {
@@ -362,20 +344,20 @@ void test_houseHolderHelper() {
     //
     float* result = houseHolderHelper(beta, v, m);
 
-    printf("H:\n");
+    // printf("H:\n");
     for (int i = 0; i < m; i++){
         for (int j = 0; j < m; j++){
-            printf("%f ", result[i*m+j]);
+            // printf("%f ", result[i*m+j]);
         }
-        printf("\n");
+        // printf("\n");
     }
     float *Hx = calloc(m, sizeof(float));
     gemm_rvv(Hx, result, x, m, 1, m);
-    printf("Hx: \n");
+    // printf("Hx: \n");
     for (int i = 0; i < m; i++){
-        printf("%f ", Hx[i]);
+        // printf("%f ", Hx[i]);
     }
-    printf("\n");
+    // printf("\n");
     free(Hx);
 }
 
@@ -390,20 +372,20 @@ void test_houseHolderHelper() {
 //     int m = 3;
 //     int n = 2;
 //     float A[] = {1.0, -4.0, 2.0, 3.0, 2.0, 2.0};
-//     printf("A:\n");
+//     // printf("A:\n");
 //     for (int i = 0; i < m; i++){
 //         for (int j = 0; j < n; j++){
-//             printf("%f ", A[i*n+j]);
+//             // printf("%f ", A[i*n+j]);
 //         }
-//         printf("\n");
+//         // printf("\n");
 //     }
 //     houseHolderQR(A, m, n);
-//     printf("R:\n");
+//     // printf("R:\n");
 //     for (int i = 0; i < m; i++){
 //         for (int j = 0; j < n; j++){
-//             printf("%f ", A[i*n+j]);
+//             // printf("%f ", A[i*n+j]);
 //         }
-//         printf("\n");
+//         // printf("\n");
 //     }
 // }
 
@@ -417,14 +399,14 @@ void test_backSubstitution() {
     float y[] = {4.0f, -1.0f, 2.0f};
     float x[3] = {0.0};
 
-    printf("Calling backsubstition\n");
+    // printf("Calling backsubstition\n");
     backSubstitution(R, y, x, m, n);
 
-    printf("x: \n");
+    // printf("x: \n");
     for (int i = 0; i < n; i++) {
-        printf("%.3f ", x[i]);
+        // printf("%.3f ", x[i]);
     }
-    printf("\n");
+    // printf("\n");
 
     // Test case 2
     m = 10;
@@ -440,52 +422,52 @@ void test_backSubstitution() {
                         {0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.246312, 0.922411},
                         {0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.592532}};
     float y1[10] = {9, -10,   2,   1, -10,  -3,   4, -15, -15,  -6};
-    float x1[10] = {0.0};    
-    float x1_gold[10] = {-1412.0336846940822, -2328.4704431714517, 1889.3309535190674, -1621.1434792606606, 38.486833695540504, -67.49929122866932, 188.0552272912475, -6.519084264460278, -22.977492873375027, -10.126042145412656};         
+    float x1[10] = {0.0};
+    float x1_gold[10] = {-1412.0336846940822, -2328.4704431714517, 1889.3309535190674, -1621.1434792606606, 38.486833695540504, -67.49929122866932, 188.0552272912475, -6.519084264460278, -22.977492873375027, -10.126042145412656};
 
-    printf("\nTest Case 2: %dx%d\n", m, n);
-    printf("Calling backsubstition\n");
+    // printf("\nTest Case 2: %dx%d\n", m, n);
+    // printf("Calling backsubstition\n");
     backSubstitution(R1[0], y1, x1, m, n);
 
-    printf("x: \n");
+    // printf("x: \n");
     bool pass = true;
     for (int i = 0; i < n; i++) {
-        printf("%.3f ", x1[i]);
+        // printf("%.3f ", x1[i]);
         pass |= (x1[i]-x1_gold[i]) < 1e-4;
     }
-    printf("\n");
-    printf(pass ? "PASS\n" : "FAIL\n");
+    // printf("\n");
+    // printf(pass ? "PASS\n" : "FAIL\n");
 
 
 }
 
-void test_houseHolderQRLS() {
-    // int m = 3;
-    // int n = 2;
-    // float A[] = {1.0, -4.0, 2.0, 3.0, 2.0, 2.0}; // Original
-    // float A[] = {2.0, 2.0, 
-    //              1.0, -4.0, 
-    //              3.0, 2.0};
+// void test_houseHolderQRLS() {
+//     // int m = 3;
+//     // int n = 2;
+//     // float A[] = {1.0, -4.0, 2.0, 3.0, 2.0, 2.0}; // Original
+//     // float A[] = {2.0, 2.0,
+//     //              1.0, -4.0,
+//     //              3.0, 2.0};
 
-    float *x = (float*) calloc(N_DIM, sizeof(float));
-    x = householderQRLS(a_matrix, b_vec, M_DIM, N_DIM);
+//     float *x = (float*) calloc(N_DIM, sizeof(float));
+//     x = householderQRLS(a_matrix, b_vec, M_DIM, N_DIM);
 
-    printf("ref x: \n");
-    for (int i = 0; i < N_DIM; i++) {
-        printf("%f ", x_vec[i]);
-    }
-    printf("\n");
-    printf("our x: \n");
-    for (int i = 0; i < N_DIM; i++) {
-        printf("%f ", x[i]);
-    }
-    printf("\n");
-}
+//     // printf("ref x: \n");
+//     for (int i = 0; i < N_DIM; i++) {
+//         // printf("%f ", x_vec[i]);
+//     }
+//     // printf("\n");
+//     // printf("our x: \n");
+//     for (int i = 0; i < N_DIM; i++) {
+//         // printf("%f ", x[i]);
+//     }
+//     // printf("\n");
+// }
 
-int main() {
-    // test_house();
-    // test_houseHolderHelper();
-    // test_houseHolderQR();
-    // test_backSubstitution();
-    test_houseHolderQRLS();
-}
+// int main() {
+//     // test_house();
+//     // test_houseHolderHelper();
+//     // test_houseHolderQR();
+//     // test_backSubstitution();
+//     test_houseHolderQRLS();
+// }

@@ -1,4 +1,5 @@
 #include <riscv_vector.h>
+#include "gemm_rvv.h"
 
 void dsgemm_csc_rvv(float *c_matrix, const float *a_matrix, 
                         const int *b_matrix_indptr, const int *b_matrix_indices,

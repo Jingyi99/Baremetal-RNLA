@@ -2,66 +2,47 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include "riscv_vector.h"
 #include "rand.h"
+#include "utils.h"
+#include "riscv_vector.h"
 
-#define M 200
-#define N 16
-
-void print_vector(char c, uint64_t* v, size_t vl) {
-  printf("%c = ", c);
-  for(int x=0; x < vl; x++) {
-    printf("%d ", v[x]);
+#ifdef DEBUG
+  vuint64m8_t test_vecptr(vuint64m8_t* a, vuint64m8_t* b) {
+    size_t vl = __riscv_vsetvl_e64m8(4);
+    vuint64m8_t tmp = *b;
+    *b = *a;
+    *a =  __riscv_vadd_vv_u64m8(*a, tmp, vl);
+    return tmp;
   }
-  printf("\n");
-}
 
-void print_matrix(float* A, int r, int c) {
-  uint32_t i, j;
-  for(i = 0; i < r; i++) {
-    for(j = 0; j < c-1; j++) {
-      printf("%.2f ", *(A + i*c + j));
-    }
-    printf("%.2f\n", *(A + i*c + j));
+  void run_test_vecptr() {
+    uint64_t a[32] = {4, 4, 3, 3, 5, 5, 0, 6, 1, 8, 8, 0, 1, 3, 7, 2, 4, 1, 2, 4, 3, 2, 3, 3, 0, 1, 3, 1, 0, 2, 3, 2};
+    uint64_t b[32] = {2, 4, 3, 1, 0, 3, 1, 3, 0, 1, 0, 2, 1, 4, 1, 1, 2, 1, 2, 2, 0, 0, 2, 0, 2, 2, 0, 2, 0, 0, 0, 1};
+    uint64_t c[32] = {0.0}; 
+    
+    size_t vl = __riscv_vsetvl_e64m8(4);
+    vuint64m8_t a_v = __riscv_vle64_v_u64m8(a, vl);
+    vuint64m8_t b_v = __riscv_vle64_v_u64m8(b, vl);
+    vuint64m8_t sum = __riscv_vadd_vv_u64m8(a_v, b_v, vl);
+    vuint64m8_t c_v = test_vecptr(&a_v, &b_v);
+    __riscv_vse64_v_u64m8(a, a_v, vl);
+    __riscv_vse64_v_u64m8(b, b_v, vl);
+    __riscv_vse64_v_u64m8(c, c_v, vl);
+
+    // print_vector('a', a, vl);
+    // print_vector('b', b, vl);
+    // print_vector('c', c, vl);
   }
-}
-
-vuint64m8_t test_vecptr(vuint64m8_t* a, vuint64m8_t* b) {
-  size_t vl = __riscv_vsetvl_e64m8(4);
-  vuint64m8_t tmp = *b;
-  *b = *a;
-  *a =  __riscv_vadd_vv_u64m8(*a, tmp, vl);
-  return tmp;
-}
-
-void run_test_vecptr() {
-  uint64_t a[32] = {4, 4, 3, 3, 5, 5, 0, 6, 1, 8, 8, 0, 1, 3, 7, 2, 4, 1, 2, 4, 3, 2, 3, 3, 0, 1, 3, 1, 0, 2, 3, 2};
-  uint64_t b[32] = {2, 4, 3, 1, 0, 3, 1, 3, 0, 1, 0, 2, 1, 4, 1, 1, 2, 1, 2, 2, 0, 0, 2, 0, 2, 2, 0, 2, 0, 0, 0, 1};
-  uint64_t c[32] = {0.0}; 
-  
-  size_t vl = __riscv_vsetvl_e64m8(4);
-  vuint64m8_t a_v = __riscv_vle64_v_u64m8(a, vl);
-  vuint64m8_t b_v = __riscv_vle64_v_u64m8(b, vl);
-  vuint64m8_t sum = __riscv_vadd_vv_u64m8(a_v, b_v, vl);
-  vuint64m8_t c_v = test_vecptr(&a_v, &b_v);
-  __riscv_vse64_v_u64m8(a, a_v, vl);
-  __riscv_vse64_v_u64m8(b, b_v, vl);
-  __riscv_vse64_v_u64m8(c, c_v, vl);
-
-  print_vector('a', a, vl);
-  print_vector('b', b, vl);
-  print_vector('c', c, vl);
-}
+#endif
 
 /*
  * Generate -/+1 float from vector of random numbers based upon
  * LSb
  *
- * rand_num - vector of random number generate from PRNG
- * vl - AVL for rand_num
+ *  rand_num - vector of random number generate from PRNG
+ *  vl - AVL for rand_num
  */
-static inline vfloat32m4_t hadamardrize(vuint64m8_t rand_num, size_t vl) {
-  // size_t vl = __riscv_vsetvl_e64m8(32);
+vfloat32m4_t hadamardrize_e64(vuint64m8_t rand_num, size_t vl) {
   vuint64m8_t sign = __riscv_vsll_vx_u64m8(rand_num, 63, vl);
   vuint32m4_t sign_32 = __riscv_vnsrl_wx_u32m4(sign, 32, vl);
   vuint32m4_t res = __riscv_vmv_v_x_u32m4((0x7F << 23), vl);  // Add exponent (127)
@@ -74,9 +55,9 @@ static inline vfloat32m4_t hadamardrize(vuint64m8_t rand_num, size_t vl) {
  * Generate random float (-1,1) from PRNG with significand being
  * 23 MSbs of upper half of rand_num
  *
- * rand_num - PRNG output (vector reg)
+ *  rand_num - PRNG output (vector reg)
 */
-static inline vfloat32m4_t rand2float_64(vuint64m8_t rand_num, size_t vl) {
+vfloat32m4_t rand2float_64(vuint64m8_t rand_num, size_t vl) {
   vuint64m8_t sign = __riscv_vsll_vx_u64m8(rand_num, 63, vl);
   vuint32m4_t sign_32 = __riscv_vnsrl_wx_u32m4(sign, 32, vl);
   vuint32m4_t rand_num32 = __riscv_vnsrl_wx_u32m4(rand_num, 32, vl);
@@ -126,16 +107,11 @@ vuint64m8_t xoroshiro128p(vuint64m8_t* s0, vuint64m8_t* s1, size_t vl) {
 /*
  * Generate a matrix of random floats
  *
- * gen - function to generate numbers
+ * conv - function to generate numbers
  * rand_mat - pointer to empty matrix 
  */
-void genmatrix_xoroshiro128(vfloat32m4_t (*gen)(vuint64m8_t, size_t), float* rand_mat) {
-  size_t vl;
-  uint64_t seed0[64];
-  uint64_t seed1[64];
-  
-  float S[M][N];  // Sketch matrix
-  vl = __riscv_vsetvl_e64m8(32);
+void genmatrix_xoroshiro128(vfloat32m4_t (*conv)(vuint64m8_t, size_t), float* rand_mat, uint32_t M, uint32_t N) {
+  size_t vl = __riscv_vsetvl_e64m8(32);
 
   // Load seeds
   vuint64m8_t s0 =__riscv_vle64_v_u64m8(splitmix64_seed0, vl);  
@@ -148,7 +124,7 @@ void genmatrix_xoroshiro128(vfloat32m4_t (*gen)(vuint64m8_t, size_t), float* ran
   for (uint32_t x = 0; x < M*N; x+=vl) {
     vl = __riscv_vsetvl_e64m8(32);
     rand_v = xoroshiro128p(&s0, &s1, vl);
-    res_float = gen(rand_v, vl);
+    res_float = conv(rand_v, vl);
   
     __riscv_vse32_v_f32m4((float *) (rand_mat + x), res_float, vl);
   }
@@ -157,28 +133,28 @@ void genmatrix_xoroshiro128(vfloat32m4_t (*gen)(vuint64m8_t, size_t), float* ran
 
 
 
-int main() {
-  uint64_t rand[32] = {0};
+// int main() {
+//   uint64_t rand[32] = {0};
 
-  float S[M*N];
+//   float S[M*N];
 
-  genmatrix_xoroshiro128(rand2float_64, S);
-  print_matrix((float *) S, M, N);
+//   genmatrix_xoroshiro128(rand2float_64, S);
+//   print_matrix((float *) S, M, N);
 
 
   
-  // size_t vl = __riscv_vsetvl_e64m8(1);
-  // vuint64m8_t s0 = __riscv_vle64_v_u64m8(splitmix64_seed0, vl);
-  // vuint64m8_t s1 = __riscv_vle64_v_u64m8(splitmix64_seed1, vl);
+//   // size_t vl = __riscv_vsetvl_e64m8(1);
+//   // vuint64m8_t s0 = __riscv_vle64_v_u64m8(splitmix64_seed0, vl);
+//   // vuint64m8_t s1 = __riscv_vle64_v_u64m8(splitmix64_seed1, vl);
 
-  // for(int i=0; i < 1; i++){
-  //     vuint64m8_t rand_v = xoshiro128p(&s0, &s1, vl);
-  //     __riscv_vse64_v_u64m8(rand, rand_v, vl);
-  //     for(int x=0; x < vl; x++) {
-  //       printf("0x%lx ", rand[x]);
-  //   }
-  //   printf("\n");
-  // }
+//   // for(int i=0; i < 1; i++){
+//   //     vuint64m8_t rand_v = xoshiro128p(&s0, &s1, vl);
+//   //     __riscv_vse64_v_u64m8(rand, rand_v, vl);
+//   //     for(int x=0; x < vl; x++) {
+//   //       printf("0x%lx ", rand[x]);
+//   //   }
+//   //   printf("\n");
+//   // }
 
-  return 0;
-}
+//   return 0;
+// }
