@@ -2,6 +2,7 @@ import numpy as np
 import scipy.io as sio
 import scipy.sparse as sp
 from util import *
+import sys
 
 # Read from MAT file
 def read_mat(filename):
@@ -27,6 +28,8 @@ def generate_sparse_only(filename):
     print_array('static data_t a_matrix_data', a_data, nnz)
     print_array('static data_t b_vec', b_vec.flatten(), m_dim)
 
-filename = 'mk12-b2.mat'
-generate_sparse_only(filename)
+# filename = 'dataset/suitsparse/mk12-b1.mat'
 
+if __name__ == '__main__':
+    filename = sys.argv[1]
+    generate_sparse_only(filename)
