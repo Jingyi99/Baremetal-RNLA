@@ -35,7 +35,7 @@ def generate_skecthing_matrix(d_dim, m_dim, type):
     elif type == 'minus_one':
         A = np.ones((d_dim, m_dim)) * -1
     print_header(d_dim, m_dim, "double")
-    print_array('static data_t sketching_matrix', A.flatten(), 'D_DIM*M_DIM')
+    print_array('static data_t sketching_matrix', A.flatten(), 'd_DIM*m_DIM')
     return A
 
 if __name__ == '__main__':
