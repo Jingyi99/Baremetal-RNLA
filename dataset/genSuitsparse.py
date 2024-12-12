@@ -12,7 +12,6 @@ def read_mat(filename):
     a_data = a_csc.data
     a_indices = a_csc.indices
     a_indptr = a_csc.indptr
-
     m_dim = a_csc.shape[0]
     n_dim = a_csc.shape[1]
     nnz = len(a_data)
