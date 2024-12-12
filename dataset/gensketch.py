@@ -14,7 +14,7 @@ def print_array(name, data, data_size, data_type='double', data_fmt='{}', fold=1
     print('};')
 
 def print_header(d_dim, m_dim, dtype):
-    print(f'''#define M_DIM {m_dim}
+    print(f'''
 #define d_DIM {d_dim}
 #define m_DIM {m_dim}
 
