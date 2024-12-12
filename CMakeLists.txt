@@ -35,7 +35,7 @@ if (NOT DEFINED LINKER_SCRIPT)
   set(LINKER_SCRIPT     ${CMAKE_SOURCE_DIR}/src/rvv/htif.ld)
 endif()
 
-target_compile_options(target-riscv INTERFACE -fno-common -fno-builtin-printf)
+target_compile_options(target-riscv INTERFACE -O1 -fno-common -fno-builtin-printf)
 target_compile_options(target-riscv INTERFACE -static -u _printf_float)
 target_compile_options(target-riscv INTERFACE -march=${ARCH} -mabi=${ABI} -mcmodel=${CMODEL})
 target_compile_options(target-riscv INTERFACE -Wl,-Map=output.map ${SPEC_FLAGS})
@@ -56,7 +56,7 @@ message(STATUS "${CMAKE_SOURCE_DIR}")
 add_executable(test_cpu src/cpu/sketch_n_solve.c)
 add_executable(test_rvv test/rvv/test_rvv.c)
 
-if (RISCV) 
+if (RISCV)
   message(STATUS "Building for RISC-V")
   set(cpu_impl
   ./src/cpu/gemm.c
@@ -70,29 +70,37 @@ if (RISCV_V)
   message(STATUS "Using RVV implementation")
   add_compile_definitions(RISCV_V)
   set(rvv_impl
-  ./src/rvv/gemm.c
+    ./src/rvv/gemm.c
+    ./src/rvv/dsgemm.c
+    ./src/rvv/rand/xorshift.c
+    ./src/rvv/rand/xoroshiro128p.c
+    ./src/rvv/ls_qr_householder.c
+    ./src/rvv/sketch_n_solve.c
   )
 endif()
+
 
 add_library(bmrnla
     ${rvv_impl}
     ${cpu_impl}
 )
-target_link_libraries(bmrnla target-riscv)
 
-# target_link_libraries(test_rvv PUBLIC bmrnla)
-# target_include_directories(test_rvv PUBLIC 
-#   ./test/
-#   ./dataset
-# )
+target_link_libraries(bmrnla target-riscv)
+target_include_directories(bmrnla PUBLIC
+  ./test/
+  ./dataset
+  ./dataset/suitsparse
+  ./src/rvv/headers
+)
+
 target_link_libraries(test_rvv PUBLIC bmrnla)
-target_include_directories(test_rvv PUBLIC 
+target_include_directories(test_rvv PUBLIC
   ./test/
   ./dataset
 )
 
 target_link_libraries(test_cpu PUBLIC bmrnla)
-target_include_directories(test_cpu PUBLIC 
+target_include_directories(test_cpu PUBLIC
   ./test/
   ./dataset
 )
