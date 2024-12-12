@@ -1,0 +1,7 @@
+*build/
+*.bin
+*.log
+*.dump
+*.riscv
+dataset/archv/
+src/eigen/test.cpp
