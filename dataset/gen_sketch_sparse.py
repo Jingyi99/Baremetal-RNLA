@@ -41,21 +41,24 @@ def generate_custom_sparse(m_dim, n_dim):
     print_array('static data_t b_vec', b_vec.flatten(), m_dim)
 
 if __name__ == '__main__':
+    print(len(sys.argv))
     if len(sys.argv) == 4:
-        n_dim = int(sys.argv[2])    
-        d_dim = n_dim  * 3
-        m_dim = int(sys.argv[1]) 
-        type = sys.argv[3]
-        filename = sys.argv[4]
+        print("Generating sketching matrix and reading sparse matrix from file")
+        # n_dim = int(sys.argv[2])    
+        # d_dim = n_dim  * 3
+        # m_dim = int(sys.argv[1]) 
+        # type = sys.argv[3]
+        # filename = sys.argv[4]
     
-        generate_skecthing_matrix(d_dim, m_dim, type)
-        generate_sparse_only(filename)
+        # generate_skecthing_matrix(d_dim, m_dim, type)
+        # generate_sparse_only(filename)
         
     elif len(sys.argv) == 3:
+        print("Generating sketching matrix and custom sparse matrix")
         n_dim = int(sys.argv[2])    
         d_dim = n_dim  * 3
         m_dim = int(sys.argv[1]) 
         type = sys.argv[3]
     
         generate_skecthing_matrix(d_dim, m_dim, type)
-        generate_custom_sparse()
+        generate_custom_sparse(m_dim, n_dim)
