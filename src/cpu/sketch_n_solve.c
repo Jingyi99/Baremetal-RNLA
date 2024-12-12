@@ -21,17 +21,34 @@ int main() {
     int solving_cycles = read_cycles() - solver_start;
 
     printf("Matrix dim: %d by %d, sketching took %lu cycles, solving took %lu cycles\n", D_DIM, N_DIM, sketching_cycles, solving_cycles);
+    FILE *fptr;
+    fptr = fopen("results/custom1_interval.txt", "w");
+    if (fptr == NULL)
+    {
+        printf("Output file Error!");
+    }
     printf("\n");
     // printf("qrls result x:");
     // for (int i = 0; i < N_DIM; i++) {
     //     printf("%lf ", x_ls[i]);
     // }
-    printf("\n");
     printf("sketched result x:");
+    fprintf(fptr, "sketched result x:");
     for (int i = 0; i < N_DIM; i++) {
         printf("%lf ", x_ls[i]);
+        fprintf(fptr, "%lf ", x_ls[i]);
     }
     printf("\n");
+    fprintf(fptr, "\n");
+    // printf("expected x:");
+    // fprintf(fptr, "expected x:");
+    // for (int i = 0; i < N_DIM; i++) {
+    //     printf("%lf ", x_vec[i]);
+    //     fprintf(fptr, "%lf ", x_vec[i]);
+    // }
+    printf("\n");
+    fprintf(fptr, "\n");
+    fclose(fptr);
     free(x_ls);
     free(sketched_a_matrix);
     free(sketched_b_vec);
