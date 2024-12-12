@@ -8,29 +8,38 @@
 #if HEADER_FILE == 1
 #include "../../dataset/sns/sk_32_fixed.h"
 #elif HEADER_FILE == 2
+#elif HEADER_FILE == 2
 #include "../../dataset/sns/sk_32_interval.h"
+#elif HEADER_FILE == 3
 #elif HEADER_FILE == 3
 #include "../../dataset/sns/sk_256_fixed.h"
 #elif HEADER_FILE == 4
+#elif HEADER_FILE == 4
 #include "../../dataset/sns/sk_256_interval.h"
+#elif HEADER_FILE == 5
 #elif HEADER_FILE == 5
 #include "../../dataset/sns/sk_512_fixed.h"
 #elif HEADER_FILE == 6
+#elif HEADER_FILE == 6
 #include "../../dataset/sns/sk_512_interval.h"
+#elif HEADER_FILE == 7
 #elif HEADER_FILE == 7
 #include "../../dataset/sns/sk_1024_fixed.h"
 #elif HEADER_FILE == 8
+#elif HEADER_FILE == 8
 #include "../../dataset/sns/sk_1024_interval.h"
+#elif HEADER_FILE == 9
 #elif HEADER_FILE == 9
 #include "../../dataset/sns/sk_4096_fixed.h"
 #elif HEADER_FILE == 10
+#elif HEADER_FILE == 10
 #include "../../dataset/sns/sk_4096_interval.h"
+#elif HEADER_FILE == 11
 #elif HEADER_FILE == 11
 #include "../../dataset/sns/sk_8192_fixed.h"
 #elif HEADER_FILE == 12
+#elif HEADER_FILE == 12
 #include "../../dataset/sns/sk_8192_interval.h"
-#else
-#error "No valid HEADER_FILE specified"
 #endif
 
 // basically transform from csc to csr
@@ -55,7 +64,6 @@ void getATranspose(int** a_transpose_indptr, int** a_transpose_indices, float** 
     *a_transpose_indices = temp_indices;
     *a_transpose_indptr = temp_indptr;
 }
-
 
 float getL2NormDense(float* matrix, int m, int n) {
     float norm = 0;
@@ -97,28 +105,37 @@ float getErrorMetric(float* x_ls) {
     sdgemm_csc(A_transpose_Ax_minus_b, a_transpose_indptr, a_transpose_indices, a_transpose_data, Ax_minus_b, N_DIM, 1, M_DIM);
     float denominator = getFrobeniusNormSparse() * getL2NormDense(Ax_minus_b, M_DIM, 1);
     float errorMetric = getL2NormDense(A_transpose_Ax_minus_b, N_DIM, 1) / denominator;
-    printf("numerator: %f\n", getL2NormDense(A_transpose_Ax_minus_b, N_DIM, 1));
-    printf("denominator: %f\n", denominator);
-    printf("A_transpose_Ax_minus_b: %f\n", A_transpose_Ax_minus_b, N_DIM);
-    printf("Ax_minus_b: %f\n", Ax_minus_b, M_DIM);
-    printf("Ax: %f\n", Ax, M_DIM);
+    printf("numerator: %lf\n", getL2NormDense(A_transpose_Ax_minus_b, N_DIM, 1));
+    printf("denominator: %lf\n", denominator);
+    printf("A_transpose_Ax_minus_b: ");
+    for (int i = 0; i < N_DIM; i++) {
+        printf("%lf ", A_transpose_Ax_minus_b[i]);
+    }
+    printf("\n");
+    printf("Ax_minus_b: ");
+    for (int i = 0; i < M_DIM; i++) {
+        printf("%lf ", Ax_minus_b[i]);
+    }
+    printf("\n");
+    printf("Ax: ");
+    for (int i = 0; i < M_DIM; i++) {
+        printf("%lf ", Ax[i]);
+    }
+    printf("\n");
     free(Ax);
     free(Ax_minus_b);
     free(A_transpose_Ax_minus_b);
     return errorMetric;
 }
 
-
-
-
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         return 1;
     }
     char* matrix_file = argv[1];
-    float* x_ls = (float*)calloc(N_DIM, sizeof(float));
     float* sketched_a_matrix = (float*)calloc(D_DIM*N_DIM, sizeof(float));
     float* sketched_b_vec = (float*)calloc(D_DIM, sizeof(float));
+    float* x_sketched = (float*)calloc(N_DIM, sizeof(float));
     float* x_sketched = (float*)calloc(N_DIM, sizeof(float));
     dsgemm_csc(sketched_a_matrix, sketching_matrix, a_matrix_indptr,a_matrix_indices, a_matrix_data, D_DIM, N_DIM, M_DIM);
     gemm(sketched_b_vec, sketching_matrix, b_vec, D_DIM, 1, M_DIM);
@@ -139,34 +156,46 @@ int main(int argc, char* argv[]) {
     //     free(sketched_b_vec);
     //     return 1;
     // } 
+    // FILE *fptr;
+    // char result_file[256];
+    //    if (mkdir("../../dataset/results", 0777) == -1 && errno != EEXIST) {
+    //     perror("Error creating directory");
+    //     return 1;
+    // }
+    // sprintf(result_file, "../../dataset/results/%s.txt", matrix_file);
+    // fptr = fopen("../../dataset/results/sk_32_fixed.txt", "w");
+    // if (fptr == NULL)
+    // {
+    //     printf("Output file Error!");
+    //     free(x_ls);
+    //     free(sketched_a_matrix);
+    //     free(sketched_b_vec);
+    //     return 1;
+    // } 
     printf("\n");
     printf("sketched result x:");
     // fprintf(fptr, "sketched result x:");
+    // fprintf(fptr, "sketched result x:");
     for (int i = 0; i < N_DIM; i++) {
-        printf("%lf ", x_ls[i]);
+        printf("%lf ", x_sketched[i]);
         // fprintf(fptr, "%lf ", x_ls[i]);
     }
     printf("\n");
     // fprintf(fptr, "\n");
-
-  
-
     printf("expected x:");
+    // fprintf(fptr, "expected x:");
     // fprintf(fptr, "expected x:");
     for (int i = 0; i < N_DIM; i++) {
         printf("%lf ", x_vec[i]);
         // fprintf(fptr, "%lf ", x_vec[i]);
+        // fprintf(fptr, "%lf ", x_vec[i]);
     }
     printf("\n");
     // fprintf(fptr, "\n");
-
-    printf("Error Metric: %f\n", getErrorMetric(x_ls));
-
+    printf("Error Metric: %lf\n", getErrorMetric(x_sketched));
     // fclose(fptr);
-    free(x_ls);
     free(sketched_a_matrix);
     free(sketched_b_vec);
     free(x_sketched);
-
     return 0;
 }
