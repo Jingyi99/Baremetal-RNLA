@@ -3,23 +3,9 @@ import scipy.io as sio
 import scipy.sparse as sp
 from scipy.sparse import csc_matrix, csr_matrix, random
 import sys
-
+from util import *
 # python dataset/gensketch.py <d_dim> <m_dim> <type> > dataset/sketching_matrix/sk.h
 # type: interval, fixed
-
-def print_array(name, data, data_size, data_type='double', data_fmt='{}', fold=10):
-    print(f"{name} [{data_size}] = {{")
-    for i in range(0, len(data), fold):
-        print('  ', ', '.join(data_fmt.format(x) for x in data[i:i+fold]), ',', sep='')
-    print('};')
-
-def print_header(d_dim, m_dim, dtype):
-    print(f'''
-#define d_DIM {d_dim}
-#define m_DIM {m_dim}
-
-typedef {dtype} data_t;
-''')
 
 def generate_full_rank_matrix(m_dim, n_dim):
     while True:
@@ -32,7 +18,7 @@ def generate_skecthing_matrix(d_dim, m_dim, type):
         A = 2 * np.random.rand(d_dim, m_dim) - 1
     elif type == 'fixed':
         A =  np.random.choice([1, -1], size=(d_dim, m_dim))
-    print_header(d_dim, m_dim, "double")
+    print_header2(d_dim, m_dim, "float")
     print_array('static data_t sketching_matrix', A.flatten(), 'd_DIM*m_DIM')
     return A
 
