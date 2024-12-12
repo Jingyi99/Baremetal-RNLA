@@ -13,11 +13,11 @@ def print_header2(m_dim, n_dim, dtype='float'):
 typedef {dtype} data_t;
 ''')
     
-def print_header3(m_dim, n_dim, k_dim, dtype):
+def print_header3(m_dim, n_dim, d_dim, dtype):
     print(f'''
+#define D_DIM {d_dim}
 #define M_DIM {m_dim}
 #define N_DIM {n_dim}
-#define K_DIM {k_dim}
 
 typedef {dtype} data_t;
 ''')
