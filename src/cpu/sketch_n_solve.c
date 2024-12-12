@@ -1,5 +1,5 @@
 #include "ls_qr_householder.c"
-#include "../../dataset/sns/sk2.h"
+#include "../../dataset/sns/custom1.h"
 #include "dsgemm.c"
 
 // (float *c_matrix, const float *a_matrix,
@@ -13,12 +13,22 @@ int main() {
     float* sketched_b_vec = (float*)calloc(D_DIM, sizeof(float));
     dsgemm_csc(sketched_a_matrix, sketching_matrix, a_matrix_indptr,a_matrix_indices, a_matrix_data, D_DIM, N_DIM, M_DIM);
     gemm(sketched_b_vec, sketching_matrix, b_vec, D_DIM, 1, M_DIM);
-    x_ls = householderQRLS(sketched_a_matrix, sketched_b_vec, D_DIM, N_DIM);
+    x_sketched = householderQRLS(sketched_a_matrix, sketched_b_vec, D_DIM, N_DIM);
     printf("\n");
     printf("\n\n");
-    printf("result x:");
+    // printf("qrls result x:");
+    // for (int i = 0; i < N_DIM; i++) {
+    //     printf("%lf ", x_ls[i]);
+    // }
+    printf("\n");
+    printf("sketched result x:");
     for (int i = 0; i < N_DIM; i++) {
         printf("%lf ", x_ls[i]);
+    }
+    printf("\n");
+    printf("expected x:");
+    for (int i = 0; i < N_DIM; i++) {
+        printf("%lf ", x_vec[i]);
     }
     printf("\n");
     free(x_ls);
