@@ -1,5 +1,5 @@
 #include "ls_qr_householder.c"
-#include "../../dataset/ls/test_ls3.h"
+#include "../../dataset/ls/tiny_ls.h"
 
 int main() {
     double* x_ls;
