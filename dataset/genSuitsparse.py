@@ -30,6 +30,6 @@ def generate_sparse_only(filename):
 
 # filename = 'dataset/suitsparse/mk12-b1.mat'
 
-if __name__ == '__main__':
-    filename = sys.argv[1]
-    generate_sparse_only(filename)
+# if __name__ == '__main__':
+#     filename = sys.argv[1]
+#     generate_sparse_only(filename)
