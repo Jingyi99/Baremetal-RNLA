@@ -3,8 +3,8 @@
 #include <math.h>
 
 /* Function to compute the Euclidean norm of a vector */
-double norm(int n, double* v) {
-    double sum = 0.0;
+float norm(int n, float* v) {
+    float sum = 0.0;
     for (int i = 0; i < n; i++) {
         sum += v[i] * v[i];
     }
@@ -12,7 +12,7 @@ double norm(int n, double* v) {
 }
 
 /* Function to compute the QR decomposition using Householder transformations */
-void qr_householder(int m, int n, double** A, double** Q, double** R) {
+void qr_householder(int m, int n, float** A, float** Q, float** R) {
     // Initialize R as a copy of A and Q as the identity matrix
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < n; j++) {
@@ -25,9 +25,9 @@ void qr_householder(int m, int n, double** A, double** Q, double** R) {
 
     for (int k = 0; k < n && k < m - 1; k++) {
         // Form the Householder vector
-        double alpha = (R[k][k] >= 0) ? -norm(m - k, &R[k][k]) : norm(m - k, &R[k][k]);
-        double r = sqrt(2.0 * alpha * (alpha - R[k][k]));
-        double* v = (double*)calloc(m - k, sizeof(double));
+        float alpha = (R[k][k] >= 0) ? -norm(m - k, &R[k][k]) : norm(m - k, &R[k][k]);
+        float r = sqrt(2.0 * alpha * (alpha - R[k][k]));
+        float* v = (float*)calloc(m - k, sizeof(float));
         v[0] = R[k][k] - alpha;
         for (int i = 1; i < m - k; i++) {
             v[i] = R[k + i][k];
@@ -38,7 +38,7 @@ void qr_householder(int m, int n, double** A, double** Q, double** R) {
 
         // Apply the transformation to R
         for (int j = k; j < n; j++) {
-            double dot = 0.0;
+            float dot = 0.0;
             for (int i = 0; i < m - k; i++) {
                 dot += v[i] * R[k + i][j];
             }
@@ -49,7 +49,7 @@ void qr_householder(int m, int n, double** A, double** Q, double** R) {
 
         // Update Q
         for (int i = 0; i < m; i++) {
-            double dot = 0.0;
+            float dot = 0.0;
             for (int j = 0; j < m - k; j++) {
                 dot += v[j] * Q[i][k + j];
             }
@@ -64,7 +64,7 @@ void qr_householder(int m, int n, double** A, double** Q, double** R) {
     // Transpose Q
     for (int i = 0; i < m; i++) {
         for (int j = i + 1; j < m; j++) {
-            double temp = Q[i][j];
+            float temp = Q[i][j];
             Q[i][j] = Q[j][i];
             Q[j][i] = temp;
         }
@@ -72,7 +72,7 @@ void qr_householder(int m, int n, double** A, double** Q, double** R) {
 }
 
 /* Function to solve Rx = Q^T * b for x */
-void solve(int n, double** R, double* Qt_b, double* x) {
+void solve(int n, float** R, float* Qt_b, float* x) {
     for (int i = n - 1; i >= 0; i--) {
         x[i] = Qt_b[i];
         for (int j = i + 1; j < n; j++) {
@@ -83,19 +83,19 @@ void solve(int n, double** R, double* Qt_b, double* x) {
 }
 
 /* Least Squares Solver */
-void least_squares(int m, int n, double** A, double* b, double* x) {
-    double** Q = (double**)malloc(m * sizeof(double*));
-    double** R = (double**)malloc(m * sizeof(double*));
+void least_squares(int m, int n, float** A, float* b, float* x) {
+    float** Q = (float**)malloc(m * sizeof(float*));
+    float** R = (float**)malloc(m * sizeof(float*));
     for (int i = 0; i < m; i++) {
-        Q[i] = (double*)calloc(m, sizeof(double));
-        R[i] = (double*)calloc(n, sizeof(double));
+        Q[i] = (float*)calloc(m, sizeof(float));
+        R[i] = (float*)calloc(n, sizeof(float));
     }
 
     // QR decomposition
     qr_householder(m, n, A, Q, R);
 
     // Compute Q^T * b
-    double* Qt_b = (double*)calloc(m, sizeof(double));
+    float* Qt_b = (float*)calloc(m, sizeof(float));
     for (int i = 0; i < m; i++) {
         for (int j = 0; j < m; j++) {
             Qt_b[i] += Q[j][i] * b[j];
@@ -116,10 +116,10 @@ void least_squares(int m, int n, double** A, double* b, double* x) {
 }
 
 /* Utility function to create a 2D array */
-double** create_matrix(int rows, int cols) {
-    double** mat = (double**)malloc(rows * sizeof(double*));
+float** create_matrix(int rows, int cols) {
+    float** mat = (float**)malloc(rows * sizeof(float*));
     for (int i = 0; i < rows; i++) {
-        mat[i] = (double*)calloc(cols, sizeof(double));
+        mat[i] = (float*)calloc(cols, sizeof(float));
     }
     return mat;
 }
@@ -127,9 +127,9 @@ double** create_matrix(int rows, int cols) {
 /* Main function */
 int main() {
     int m = 4, n = 2;
-    double** A = create_matrix(m, n);
-    double b[] = {1, 2, 3, 4};
-    double x[n];
+    float** A = create_matrix(m, n);
+    float b[] = {1, 2, 3, 4};
+    float x[n];
 
     // Example matrix
     A[0][0] = 1; A[0][1] = 2;
