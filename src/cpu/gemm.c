@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-void gemm(double *c_matrix, const double *a_matrix, const double *b_matrix,
+void gemm(float *c_matrix, const float *a_matrix, const float *b_matrix,
             const unsigned int m_dim, const unsigned int n_dim,
             const unsigned int k_dim) {
     // assuming that c_matrix is zero, quick fix
@@ -20,7 +20,7 @@ void gemm(double *c_matrix, const double *a_matrix, const double *b_matrix,
     }
 }
 
-void blocked_gemm(double *c_matrix, const double *a_matrix, const double *b_matrix,
+void blocked_gemm(float *c_matrix, const float *a_matrix, const float *b_matrix,
             const unsigned int m_dim, const unsigned int n_dim,
             const unsigned int k_dim, const unsigned int bm_dim,
             const unsigned int bk_dim, const unsigned int bn_dim) {
