@@ -8,38 +8,29 @@
 #if HEADER_FILE == 1
 #include "../../dataset/sns/sk_32_fixed.h"
 #elif HEADER_FILE == 2
-#elif HEADER_FILE == 2
 #include "../../dataset/sns/sk_32_interval.h"
-#elif HEADER_FILE == 3
 #elif HEADER_FILE == 3
 #include "../../dataset/sns/sk_256_fixed.h"
 #elif HEADER_FILE == 4
-#elif HEADER_FILE == 4
 #include "../../dataset/sns/sk_256_interval.h"
-#elif HEADER_FILE == 5
 #elif HEADER_FILE == 5
 #include "../../dataset/sns/sk_512_fixed.h"
 #elif HEADER_FILE == 6
-#elif HEADER_FILE == 6
 #include "../../dataset/sns/sk_512_interval.h"
-#elif HEADER_FILE == 7
 #elif HEADER_FILE == 7
 #include "../../dataset/sns/sk_1024_fixed.h"
 #elif HEADER_FILE == 8
-#elif HEADER_FILE == 8
 #include "../../dataset/sns/sk_1024_interval.h"
-#elif HEADER_FILE == 9
 #elif HEADER_FILE == 9
 #include "../../dataset/sns/sk_4096_fixed.h"
 #elif HEADER_FILE == 10
-#elif HEADER_FILE == 10
 #include "../../dataset/sns/sk_4096_interval.h"
-#elif HEADER_FILE == 11
 #elif HEADER_FILE == 11
 #include "../../dataset/sns/sk_8192_fixed.h"
 #elif HEADER_FILE == 12
-#elif HEADER_FILE == 12
 #include "../../dataset/sns/sk_8192_interval.h"
+#else
+#error "No valid HEADER_FILE specified"
 #endif
 
 // basically transform from csc to csr
