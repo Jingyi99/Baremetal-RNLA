@@ -16,24 +16,24 @@ target_compile_definitions(target-riscv INTERFACE RISCV)
 set(WRAP_SPECS_FILE     "htif_wrap.specs")
 set(SPECS_FILE          "htif_nano.specs")
 set(SPEC_FLAGS          -specs=${SPECS_FILE} -specs=${WRAP_SPECS_FILE})
+set(ARCH                "rv64gc")
+set(ABI                 "lp64d")
+set(CMODEL              "medany")
 
-if(NANO) # Override default
+if(NANO) # Override default (allows printf in spike)
   set(SPEC_FLAGS        -specs=${SPECS_FILE})
 endif()
-
-set(ARCH               "rv64gc")
-set(ABI                "lp64d")
-set(CMODEL             "medany")
 
 if (RISCV_V)
   list(APPEND ARCH "v")
 endif()
 
-list(JOIN ARCH "" ARCH)
-
 if (NOT DEFINED LINKER_SCRIPT)
   set(LINKER_SCRIPT     ${CMAKE_SOURCE_DIR}/src/rvv/htif.ld)
 endif()
+
+list(JOIN ARCH "" ARCH)
+
 
 target_compile_options(target-riscv INTERFACE -O1 -fno-common -fno-builtin-printf)
 target_compile_options(target-riscv INTERFACE -static -u _printf_float)
@@ -52,10 +52,6 @@ target_link_options(target-riscv INTERFACE -ffast-math)
 
 message(STATUS "${CMAKE_SOURCE_DIR}")
 
-# add_executable(test_cpu test/cpu/test_cpu.c)
-add_executable(test_cpu src/cpu/sketch_n_solve.c)
-add_executable(test_rvv test/rvv/test_rvv.c)
-
 if (RISCV)
   message(STATUS "Building for RISC-V")
   set(cpu_impl
@@ -72,31 +68,45 @@ if (RISCV_V)
   set(rvv_impl
     ./src/rvv/gemm.c
     ./src/rvv/dsgemm.c
-    ./src/rvv/rand/xorshift.c
+    ./src/rvv/rand/xorshift_m8.c
     ./src/rvv/rand/xoroshiro128p.c
     ./src/rvv/ls_qr_householder.c
-    ./src/rvv/sketch_n_solve.c
   )
 endif()
 
+# Add targets for different executables
+add_executable(test_cpu src/cpu/sketch_n_solve.c)
+add_executable(test_rvv test/rvv/test_rvv.c)
+add_executable(predefined_sns_rvv ${rvv_impl} ./src/rvv/predefined_sns_rvv.c)
+add_executable(sns_rvv ${rvv_impl} ./src/rvv/sns_rvv.c)
 
-add_library(bmrnla
-    ${rvv_impl}
-    ${cpu_impl}
-)
+# Add library for both cpu and rvv sources
+add_library(bmrnla ${rvv_impl} ${cpu_impl})
 
-target_link_libraries(bmrnla target-riscv)
-target_include_directories(bmrnla PUBLIC
+# Create header variable for all RVV targall RVV
+set(rvv_header_dirs
   ./test/
   ./dataset
   ./dataset/suitsparse
+  ./dataset/sketching_matrix
   ./src/rvv/headers
 )
+
+# Set link libraries and include directories for targets
+target_link_libraries(bmrnla target-riscv)
+target_include_directories(bmrnla PUBLIC ${rvv_header_dirs})
+
+target_link_libraries(predefined_sns_rvv target-riscv)
+target_include_directories(predefined_sns_rvv PUBLIC ${rvv_header_dirs})
+
+target_link_libraries(sns_rvv target-riscv)
+target_include_directories(sns_rvv PUBLIC ${rvv_header_dirs})
 
 target_link_libraries(test_rvv PUBLIC bmrnla)
 target_include_directories(test_rvv PUBLIC
   ./test/
   ./dataset
+  ./src/rvv/headers
 )
 
 target_link_libraries(test_cpu PUBLIC bmrnla)
@@ -104,4 +114,10 @@ target_include_directories(test_cpu PUBLIC
   ./test/
   ./dataset
 )
+
+set(OBJDUMP_FLAGS  -C -D -S --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data)
+add_custom_command(TARGET sns_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
+add_custom_command(TARGET predefined_sns_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
+add_custom_command(TARGET test_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
+add_custom_command(TARGET test_cpu POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
 
