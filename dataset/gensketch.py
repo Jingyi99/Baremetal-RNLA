@@ -4,7 +4,8 @@ import scipy.sparse as sp
 from scipy.sparse import csc_matrix, csr_matrix, random
 import sys
 
-# python gensketch.py <d_dim> <m_dim> <type>
+# python dataset/gensketch.py <d_dim> <m_dim> <type> > dataset/sketching_matrix/sk.h
+# type: random, one, minus_one
 
 def print_array(name, data, data_size, data_type='double', data_fmt='{}', fold=10):
     print(f"{name} [{data_size}] = {{")
@@ -29,10 +30,10 @@ def generate_full_rank_matrix(m_dim, n_dim):
 def generate_skecthing_matrix(d_dim, m_dim, type):
     if type == 'random':
         A = 2 * np.random.rand(d_dim, m_dim) - 1
-    elif type == '-1':
+    elif type == 'one':
+        A = np.ones((d_dim, m_dim)) 
+    elif type == 'minus_one':
         A = np.ones((d_dim, m_dim)) * -1
-    elif type == '1':
-        A = np.ones((d_dim, m_dim))
     print_header(d_dim, m_dim, "double")
     print_array('static data_t sketching_matrix', A.flatten(), 'D_DIM*M_DIM')
     return A
