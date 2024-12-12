@@ -4,9 +4,9 @@
 
 #include "lib.h"
 // #include "../dataset/small_gemm.h"
-#include "../dataset/small_csc.h"
+#include "../../dataset/gemm/small_csc.h"
 // #include "../src/rvv/gemm.c"
-#include "../src/rvv/dsgemm.c"
+#include "../../src/rvv/dsgemm.c"
 
 // int test_gemm_rvv() {
 //     printf("TEST RVV DENSE MATMUL\n");
