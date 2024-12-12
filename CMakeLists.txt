@@ -35,7 +35,7 @@ endif()
 list(JOIN ARCH "" ARCH)
 
 
-target_compile_options(target-riscv INTERFACE -O1 -fno-common -fno-builtin-printf)
+target_compile_options(target-riscv INTERFACE -O1 -g -fno-common -fno-builtin-printf)
 target_compile_options(target-riscv INTERFACE -static -u _printf_float)
 target_compile_options(target-riscv INTERFACE -march=${ARCH} -mabi=${ABI} -mcmodel=${CMODEL})
 target_compile_options(target-riscv INTERFACE -Wl,-Map=output.map ${SPEC_FLAGS})
@@ -117,7 +117,7 @@ target_include_directories(test_cpu PUBLIC
 
 set(OBJDUMP_FLAGS  -C -D -S --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data)
 add_custom_command(TARGET sns_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
-add_custom_command(TARGET predefined_sns_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
-add_custom_command(TARGET test_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
-add_custom_command(TARGET test_cpu POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
+add_custom_command(TARGET predefined_sns_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  predefined_sns_rvv > predefined_sns_rvv.dump)
+add_custom_command(TARGET test_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  test_rvv > test_rvv.dump)
+add_custom_command(TARGET test_cpu POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  test_cpu > test_cpu.dump)
 
