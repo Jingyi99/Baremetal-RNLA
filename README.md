@@ -19,3 +19,11 @@ cmake -S ./ -B ./build/ -D RISCV_V=ON
 cmake --build ./build
 spike --isa=rv64gcv_zicntr --varch=vlen:512,elen:32 ./build/test_rvv
 ```
+
+### Dataset generation script
+
+```bash 
+# Pregenerate sketching matrix and input matrix
+# type is the type of sketching matrix, either (-1, 1) 'interval 'or ±1 'fixed'
+python dataset/gen_sketch_sparse.py <m_dim> <n_dim> <type> <filename> dataset/sketching_matrix/<testname>.h
+```
