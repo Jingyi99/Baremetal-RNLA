@@ -9,8 +9,24 @@
 
 // Include test vector
 // #include "small_sqL.h"
-#include "sk.h"
 // #include "mk12-b2.h"
+// #include "sk.h"
+// 20x25 FAILS
+// 30x25 works
+// 30x30 works
+// 60x60 works
+// 60x80 FAILS
+// 70x70 works
+// 75x75 FAILS
+// 80x80 FAILS
+// 72x72 works
+// 73x73 works
+// 74x74 FAILS
+// 90x25 WORKS
+// 200x25 FAILS
+// 120x25 WORKS
+// 190x25 FAILS
+#include "test.h"
 
 
 /*
