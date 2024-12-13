@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "gemm.c"
+#include <stdlib.h>
+#include "gemm.h"
+#include "lib.h"
 
 float house(int m, float* x, float* v);
 float* houseHolderHelper(float beta, float* v, int m);
