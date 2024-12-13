@@ -15,8 +15,6 @@ void gemm_rvv(float *c_matrix,  float *a_matrix,  float *b_matrix,
         b_n_ptr = b_matrix;
         for (size_t c_n_count = n_dim; c_n_count; c_n_count -= vl) {
             vl = __riscv_vsetvl_e32m1(c_n_count);
-            // const float *a_k_ptr = a_matrix;
-            // const float *b_k_ptr = b_n_ptr;
             b_k_ptr = b_n_ptr;
             vfloat32m1_t acc = __riscv_vle32_v_f32m1(c_n_ptr, vl);
             for (size_t k = 0; k < k_dim; ++k) {
