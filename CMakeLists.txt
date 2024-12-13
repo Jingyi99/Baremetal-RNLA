@@ -75,18 +75,22 @@ if (RISCV_V)
 endif()
 
 # Add targets for different executables
-add_executable(test_cpu src/cpu/sketch_n_solve.c)
+#add_executable(test_cpu src/cpu/sketch_n_solve.c)
+add_executable(test_cpu src/cpu/pregen_sketch_solve.c ${cpu_impl})
+#add_executable(test_cpu src/cpu/time_rand.c ${cpu_impl})
 add_executable(test_rvv test/rvv/test_rvv.c)
 add_executable(predefined_sns_rvv ${rvv_impl} ./src/rvv/predefined_sns_rvv.c)
 add_executable(sns_rvv ${rvv_impl} ./src/rvv/sns_rvv.c)
 
 # Add library for both cpu and rvv sources
-add_library(bmrnla ${rvv_impl} ${cpu_impl})
+add_library(bmrnla # ${rvv_impl}
+${cpu_impl})
 
 # Create header variable for all RVV targall RVV
 set(rvv_header_dirs
   ./test/
   ./dataset
+  ./dataset/test_mats
   ./dataset/suitsparse
   ./dataset/sketching_matrix
   ./src/rvv/headers
@@ -96,7 +100,7 @@ set(rvv_header_dirs
 target_link_libraries(bmrnla target-riscv)
 target_include_directories(bmrnla PUBLIC ${rvv_header_dirs})
 
-target_link_libraries(predefined_sns_rvv target-riscv)
+target_link_libraries(predefined_sns_rvv PUBLIC bmrnla)
 target_include_directories(predefined_sns_rvv PUBLIC ${rvv_header_dirs})
 
 target_link_libraries(sns_rvv target-riscv)
@@ -109,10 +113,12 @@ target_include_directories(test_rvv PUBLIC
   ./src/rvv/headers
 )
 
-target_link_libraries(test_cpu PUBLIC bmrnla)
+#target_link_libraries(test_cpu PUBLIC bmrnla)
+target_link_libraries(test_cpu PUBLIC target-riscv)
 target_include_directories(test_cpu PUBLIC
   ./test/
   ./dataset
+  ./dataset/test_mats
 )
 
 set(OBJDUMP_FLAGS  -C -D -S --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data)
