@@ -110,18 +110,17 @@ float house(int m, float* x, float* v){
         x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
         j += vl;
     }
-    // xNorm = __riscv_vfmv_f_s_f32m1_f32(x_sum);
+
     xNorm = dot_product(x, x, m);
     xNorm = sqrt(xNorm);
     float sign = (x[0] >= 0) ? 1 : -1;
 
-    // memcpy(v, x, m * sizeof(float));
     x[0] = x[0] + sign * xNorm;
     float xtx = 0;
     float x0 = x[0];
 
-    x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
     j = 0;
+    x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
     for (i = m; i > 0; i-=vl){
         // v[i] = v[i]/v0;
         // vtv += v[i] * v[i];
@@ -133,6 +132,7 @@ float house(int m, float* x, float* v){
         x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
         j += vl;
     }
+
     xtx = __riscv_vfmv_f_s_f32m1_f32(x_sum);
     float beta = 2 / xtx;
     return beta;
@@ -140,19 +140,14 @@ float house(int m, float* x, float* v){
 
 // generate I - beta * v * vT
 float* houseHolderHelper(float beta, float* v, int m){
-    // printf("HH cycles: %d \n", read_cycles());
-    // printf("m: %d \n", m);
-
     size_t vl;
     uint32_t ind = 0;
     vfloat32m1_t res_vec;
     vfloat32m1_t v_beta_vec;
-    // float* v_beta = (float*)calloc(m, sizeof(float)); // Can be malloc, but actually don't need
-    // float* result = (float*)calloc(m*m, sizeof(float));
     float* v_beta = (float*)malloc(m* sizeof(float)); // Can be malloc, but actually don't need
     float* result = (float*)malloc(m*m* sizeof(float));
     vector_clear(result, m*m*sizeof(float));
-    // printf("HH cycles: %d \n", read_cycles());
+
 
     for(int x = m; x > 0; x-=vl) {
         vl = __riscv_vsetvl_e32m1(x);
@@ -161,7 +156,6 @@ float* houseHolderHelper(float beta, float* v, int m){
         __riscv_vse32_v_f32m1(v_beta+ind, v_beta_vec, vl);
         ind += vl;
     }
-    // printf("HH cycles: %d \n", read_cycles());
 
     gemm_rvv(result, v, v_beta, m, m, 1); // generate beta*(v x v^T)
     // free(v_beta);
@@ -176,28 +170,10 @@ float* houseHolderHelper(float beta, float* v, int m){
         __riscv_vsse32_v_f32m1(res_ptr, stride, res_vec, vl);  // Store partial diagonal
         res_ptr += vl*m + vl;
     }
-    // printf("HH cycles: %d \n", read_cycles());
 
     return result;
 }
 
-// float* houseHolderHelper(float beta, float* v, int m){
-//     float* result = (float*)calloc(m*m, sizeof(float));
-//     float* identityMatrix = (float*)calloc(m*m, sizeof(float));
-//     for (int i = 0; i < m; i++) {
-//         identityMatrix[i*m+i] = 1.0;
-//     }
-//     float* vvT = (float*)calloc(m*m, sizeof(float));
-//     gemm_rvv(vvT, v, v, m, m, 1);
-//     for (int i = 0; i < m; i++){
-//         for (int j = 0; j < m; j++){
-//             result[i*m+j] = identityMatrix[i*m+j] - beta * vvT[i*m+j];
-//         }
-//     }
-//     free(identityMatrix);
-//     free(vvT);
-//     return result;
-// }
 
 
 void backSubstitution(float* R, float* y, float* x, int m, int n){
@@ -253,6 +229,7 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
     size_t vl;
     uint32_t ind;
     float vtb;
+    float coeff;
     float beta = 1.0;
 
     vfloat32m1_t cpy;   // Vector solely for copying
@@ -264,10 +241,7 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
 
     for (int j = 0; j < n; j++){
         // // printf("houseHolderQRb iteration: %d\n", read_cycles());
-        // printf("cycles: %d \n", read_cycles());
 
-        // v = (float*)calloc((m-j), sizeof(float));
-        // x = (float*)calloc((m-j), sizeof(float));
         v = (float*)malloc((m-j)*sizeof(float));
         x = (float*)malloc((m-j)*sizeof(float));
         vector_clear(v, (m-j)*sizeof(float));
@@ -284,10 +258,8 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
         // Compute dot product (v^T,b)
         vtb = dot_product(v, b+j, m-j);
 
-        
         ind = 0;
- 
-        float coeff = beta*vtb;
+        coeff = beta*vtb;
         for (int i = m; i > j; i-=vl) {
             vl = __riscv_vsetvl_e32m1(i-j);
             v_vec = __riscv_vle32_v_f32m1(v + ind, vl);
@@ -298,12 +270,9 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
         }
 
         // multiply by A submatrix which is m-j * n-j
-        // A_sub = (float*)calloc((m-j)*(n-j), sizeof(float));
-        // A_sub_updated = (float*)calloc((m-j)*(n-j), sizeof(float));
         // A_sub =         (float*)realloc(A_sub,         (m-j)*(n-j)*sizeof(float));
         // A_sub_updated = (float*)realloc(A_sub_updated, (m-j)*(n-j)*sizeof(float));
 
-        // printf("\tcycles: %d \n", read_cycles());
 
         for (int i = 0; i < m-j; i++) {
             ind = 0;
@@ -314,8 +283,6 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
                 ind += vl;
             }
         }
-
-        // printf("\tcycles: %d \n", read_cycles());
 
         gemm_rvv(A_sub_updated, H, A_sub, m-j, n-j, m-j);
 
@@ -346,7 +313,6 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
 
 float* householderQRLS(float* A, float* b, int m, int n){
 
-    // float *x = (float*)calloc(n, sizeof(float));
     float *x = (float*)malloc(n*sizeof(float));
     vector_clear(x, n*sizeof(float));
 
@@ -356,6 +322,24 @@ float* householderQRLS(float* A, float* b, int m, int n){
     backSubstitution(A, b, x, m, n);
     return x;
 }
+
+// float* houseHolderHelper(float beta, float* v, int m){
+//     float* result = (float*)calloc(m*m, sizeof(float));
+//     float* identityMatrix = (float*)calloc(m*m, sizeof(float));
+//     for (int i = 0; i < m; i++) {
+//         identityMatrix[i*m+i] = 1.0;
+//     }
+//     float* vvT = (float*)calloc(m*m, sizeof(float));
+//     gemm_rvv(vvT, v, v, m, m, 1);
+//     for (int i = 0; i < m; i++){
+//         for (int j = 0; j < m; j++){
+//             result[i*m+j] = identityMatrix[i*m+j] - beta * vvT[i*m+j];
+//         }
+//     }
+//     free(identityMatrix);
+//     free(vvT);
+//     return result;
+// }
 
 
 // TESTING/DEBUG

@@ -14,7 +14,7 @@
 // #include "sk.h"
 // #include "test.h"
 
-// #include "sk_32_fixed.h"
+// #include "sk_32_fixe.h"
 // #include "sk_32_interval.h"
 // #include "sk_256_interval.h"
 // #include "sk_256_fixed.h"
@@ -55,23 +55,8 @@ float* pre_sketch_n_solve_rvv(float* S, uint32_t* A_ptr, uint32_t* A_ind, float*
   return x;
 }
 
-// void test_mcycle(uint32_t* arr) {
-//   uint32_t t0 = read_cycles();
-//   size_t vl = __riscv_vsetvl_e32m1(32);
-//   vuint32m8_t x = __riscv_vmv_v_x_u32m8((0x7F << 23), vl); 
-//   vuint32m8_t y = __riscv_vle32_v_u32m8(arr, vl);
-//   y = __riscv_vadd_vv_u32m8(x, y, vl);
-//   __riscv_vse32_v_u32m8(arr, y, vl);
-//   uint32_t t1 = read_cycles();
-
-//   printf("TIME (CYCLES)=============\n");
-//   printf("  Time0: %d\n", t1-t0);
-// }
 
 int main() {
   float* x = (float*) calloc(N_DIM, sizeof(float));
-  // static uint32_t arr[32] = {1 ,2 ,3 ,4 ,5 ,6 ,7 ,8 ,9 ,10, 1 ,2 ,3 ,4 ,5 ,6 ,7 ,8 ,9 ,10, 1 ,2 ,3 ,4 ,5 ,6 ,7 ,8 ,9 ,10, 11, 12};
-  // test_mcycle(arr);
-
   x = pre_sketch_n_solve_rvv(sketching_matrix, a_matrix_indptr, a_matrix_indices, a_matrix_data, b_vec, M_DIM, N_DIM, D_DIM);
 }
