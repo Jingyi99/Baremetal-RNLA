@@ -93,6 +93,17 @@ vfloat32m8_t hadamardrize_e32(vuint32m8_t rand_num, size_t vl) {
   return __riscv_vreinterpret_v_u32m8_f32m8(res);
 }
 
+// x - beginning x coordinate of column
+// y - beginning y coordinate of column
+// vl - vector length
+vuint32m8_t gen_by_coordinates(uint32_t x, uint32_t y, size_t vl) {
+  //ind = iota 
+  // x_ind = ind + x
+  // y_ind = ind + x
+  // x_ind = x_ind << 32 | y_ind
+  // Call PRNG with seeds
+}
+
 /*
  * Generate MxN random matrix using Xorshift PRNG function
  *
