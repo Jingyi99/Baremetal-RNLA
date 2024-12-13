@@ -17,14 +17,8 @@ void dsgemm_csc_rvv(float *c_matrix, const float *a_matrix,
                 float *c_m_ptr = c_matrix+col;
                 for (size_t c_m_count = m_dim; c_m_count; c_m_count -=vl) {
                     vl = __riscv_vsetvl_e32m1(c_m_count);
-                    // printf("row: %d, col: %d, data: %d, vl: %d\n", (int) row, (int) col, (int) b_matrix_data[row_ind], (int) vl);
                     vfloat32m1_t acc = __riscv_vlse32_v_f32m1(c_m_ptr, sizeof(float)* k_dim, vl);
-                    // // b: scalar a: col
                     vfloat32m1_t a_m_vec = __riscv_vlse32_v_f32m1(a_m_ptr, sizeof(float) * k_dim, vl);
-                    // for (int i = 0; i < vl; ++i) {
-                    //     printf("a: %d\n", (int) a_m_ptr[i*k_dim]);
-                    //     // printf("%f ", __riscv_vfmv_f_s_f32m1_f32(__riscv_vslidedown_vx_f32m1(a_m_vec, i, vl)));
-                    // }
                     acc = __riscv_vfmacc_vf_f32m1(acc, b_matrix_data[row_ind], a_m_vec, vl);
                     __riscv_vsse32_v_f32m1(c_m_ptr, sizeof(float) * n_dim, acc, vl);
                     a_m_ptr += vl * k_dim;
