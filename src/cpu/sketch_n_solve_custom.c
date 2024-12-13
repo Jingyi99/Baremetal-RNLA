@@ -27,32 +27,52 @@
 #endif
 
 // basically transform from csc to csr
+
+// for i in range(1, n+1):
+//       Bp[i] = Bp[i-1] + cnt[i-1]
+
+
+
 void getATranspose(int** a_transpose_indptr, int** a_transpose_indices, float** a_transpose_data) {
     int nnz = a_matrix_indptr[N_DIM];
+    
+    // Allocate temporary arrays for the transpose
     float* temp_data = (float*)calloc(nnz, sizeof(float));
     int* temp_indices = (int*)calloc(nnz, sizeof(int));
     int* temp_indptr = (int*)calloc(M_DIM + 1, sizeof(int));
+
+    // Count the number of entries per row for the transpose
     for (int i = 0; i < N_DIM; i++) {
         for (int j = a_matrix_indptr[i]; j < a_matrix_indptr[i + 1]; j++) {
             int row = a_matrix_indices[j];
+            temp_indptr[row + 1]++;
         }
     }
+
+    // Convert counts to starting indices
     for (int i = 1; i <= M_DIM; i++) {
         temp_indptr[i] += temp_indptr[i - 1];
     }
+
+    // Populate the transpose data
     for (int i = 0; i < N_DIM; i++) {
         for (int j = a_matrix_indptr[i]; j < a_matrix_indptr[i + 1]; j++) {
             int row = a_matrix_indices[j];
-            int dest = temp_indptr[row]++;
+            int dest = temp_indptr[row];
 
             temp_data[dest] = a_matrix_data[j];
             temp_indices[dest] = i;
+            temp_indptr[row]++;
         }
     }
+
+    // Restore temp_indptr to original starting positions
     for (int i = M_DIM; i > 0; i--) {
         temp_indptr[i] = temp_indptr[i - 1];
-    } 
+    }
     temp_indptr[0] = 0;
+
+    // Assign outputs
     *a_transpose_data = temp_data;
     *a_transpose_indices = temp_indices;
     *a_transpose_indptr = temp_indptr;

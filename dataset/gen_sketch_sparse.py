@@ -9,7 +9,6 @@ from genSuitsparse import read_mat, generate_sparse_only
 # type: interval, fixed
 
 
-density = 0.1
 
 def generate_full_rank_matrix(m_dim, n_dim):
     while True:
@@ -29,7 +28,7 @@ def generate_custom_sparse(m_dim, n_dim, d_dim, type):
     sketching_matrix = generate_skecthing_matrix(d_dim, m_dim, type)
     print_header3(m_dim, n_dim, d_dim, 'float')
     print_array('static data_t sketching_matrix', sketching_matrix.flatten(), 'D_DIM*M_DIM')
-    a_mat = random(m_dim, n_dim, density=0.1, dtype=int, format="csc", data_rvs=lambda s: np.random.randint(-100, 100, size=s))
+    a_mat = random(m_dim, n_dim, density=0.01, dtype=float, format="csc", data_rvs=lambda s: np.random.randint(-100, 100, size=s))
     a_indptr = a_mat.indptr
     a_data = a_mat.data
     a_indices = a_mat.indices
