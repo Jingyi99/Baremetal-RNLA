@@ -1,36 +1,29 @@
 #include "ls_qr_householder.c"
 #include "dsgemm.c"
-#include <math.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <errno.h>
-#include <stdio.h>
 #if HEADER_FILE == 1
-#include "../../dataset/sns/sk_32_fixed.h"
+#include "../../dataset/sns/sk_32_fixed_5.h"
 #elif HEADER_FILE == 2
 #include "../../dataset/sns/sk_32_interval.h"
 #elif HEADER_FILE == 3
 #include "../../dataset/sns/sk_256_fixed.h"
 #elif HEADER_FILE == 4
 #include "../../dataset/sns/sk_256_interval.h"
-#elif HEADER_FILE == 5
-#include "../../dataset/sns/sk_512_fixed.h"
-#elif HEADER_FILE == 6
-#include "../../dataset/sns/sk_512_interval.h"
-#elif HEADER_FILE == 7
-#include "../../dataset/sns/sk_1024_fixed.h"
-#elif HEADER_FILE == 8
-#include "../../dataset/sns/sk_1024_interval.h"
-#elif HEADER_FILE == 9
-#include "../../dataset/sns/sk_4096_fixed.h"
-#elif HEADER_FILE == 10
-#include "../../dataset/sns/sk_4096_interval.h"
-#elif HEADER_FILE == 11
-#include "../../dataset/sns/sk_8192_fixed.h"
-#elif HEADER_FILE == 12
-#include "../../dataset/sns/sk_8192_interval.h"
-#else
-#error "No valid HEADER_FILE specified"
+// #elif HEADER_FILE == 5
+// #include "../../dataset/sns/sk_512_fixed.h"
+// #elif HEADER_FILE == 6
+// #include "../../dataset/sns/sk_512_interval.h"
+// #elif HEADER_FILE == 7
+// #include "../../dataset/sns/sk_1024_fixed.h"
+// #elif HEADER_FILE == 8
+// #include "../../dataset/sns/sk_1024_interval.h"
+// #elif HEADER_FILE == 9
+// #include "../../dataset/sns/sk_4096_fixed.h"
+// #elif HEADER_FILE == 10
+// #include "../../dataset/sns/sk_4096_interval.h"
+// #elif HEADER_FILE == 11
+// #include "../../dataset/sns/sk_8192_fixed.h"
+// #elif HEADER_FILE == 12
+// #include "../../dataset/sns/sk_8192_interval.h"
 #endif
 
 // basically transform from csc to csr
@@ -42,15 +35,24 @@ void getATranspose(int** a_transpose_indptr, int** a_transpose_indices, float** 
     for (int i = 0; i < N_DIM; i++) {
         for (int j = a_matrix_indptr[i]; j < a_matrix_indptr[i + 1]; j++) {
             int row = a_matrix_indices[j];
-            
-            int dest = temp_indptr[row + 1]++;
-            temp_data[dest] = a_matrix_data[j];
-            temp_indices[dest] = i;
         }
     }
     for (int i = 1; i <= M_DIM; i++) {
         temp_indptr[i] += temp_indptr[i - 1];
     }
+    for (int i = 0; i < N_DIM; i++) {
+        for (int j = a_matrix_indptr[i]; j < a_matrix_indptr[i + 1]; j++) {
+            int row = a_matrix_indices[j];
+            int dest = temp_indptr[row]++;
+
+            temp_data[dest] = a_matrix_data[j];
+            temp_indices[dest] = i;
+        }
+    }
+    for (int i = M_DIM; i > 0; i--) {
+        temp_indptr[i] = temp_indptr[i - 1];
+    } 
+    temp_indptr[0] = 0;
     *a_transpose_data = temp_data;
     *a_transpose_indices = temp_indices;
     *a_transpose_indptr = temp_indptr;
@@ -93,6 +95,27 @@ float getErrorMetric(float* x_ls) {
     int* a_transpose_indices = (int*)calloc(nnz, sizeof(int));
     float* a_transpose_data = (float*)calloc(nnz, sizeof(float));
     getATranspose(&a_transpose_indptr, &a_transpose_indices, &a_transpose_data);
+    FILE *file = fopen("a_transpose.txt", "w");
+    if (file == NULL) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+
+    fprintf(file, "a_transpose_indptr:\n");
+    for (int i = 0; i <= M_DIM; i++) {
+        fprintf(file, "%d ", a_transpose_indptr[i]);
+    }
+    fprintf(file, "\na_transpose_indices:\n");
+    for (int i = 0; i < nnz; i++) {
+        fprintf(file, "%d ", a_transpose_indices[i]);
+    }
+    fprintf(file, "\na_transpose_data:\n");
+    for (int i = 0; i < nnz; i++) {
+        fprintf(file, "%f ", a_transpose_data[i]);
+    }
+    fprintf(file, "\n");
+
+    fclose(file);
     sdgemm_csc(A_transpose_Ax_minus_b, a_transpose_indptr, a_transpose_indices, a_transpose_data, Ax_minus_b, N_DIM, 1, M_DIM);
     float denominator = getFrobeniusNormSparse() * getL2NormDense(Ax_minus_b, M_DIM, 1);
     float errorMetric = getL2NormDense(A_transpose_Ax_minus_b, N_DIM, 1) / denominator;
@@ -126,7 +149,7 @@ int main(int argc, char* argv[]) {
     char* matrix_file = argv[1];
     float* sketched_a_matrix = (float*)calloc(D_DIM*N_DIM, sizeof(float));
     float* sketched_b_vec = (float*)calloc(D_DIM, sizeof(float));
-    float* x_sketched = (float*)calloc(N_DIM, sizeof(float));
+
     float* x_sketched = (float*)calloc(N_DIM, sizeof(float));
     dsgemm_csc(sketched_a_matrix, sketching_matrix, a_matrix_indptr,a_matrix_indices, a_matrix_data, D_DIM, N_DIM, M_DIM);
     gemm(sketched_b_vec, sketching_matrix, b_vec, D_DIM, 1, M_DIM);

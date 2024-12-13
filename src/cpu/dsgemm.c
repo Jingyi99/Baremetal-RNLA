@@ -20,9 +20,9 @@ void dsgemm_csc(float *c_matrix, const float *a_matrix,
 }
 
 // sparse(left matrix) dense(right matrix) matmul in CSC format 
-void sdgemm_csc(int *c_matrix, const int *a_matrix_indptr,
-            const int *a_matrix_indices, const int *a_matrix_data,
-            const int *b_matrix,
+void sdgemm_csc(float *c_matrix, const int *a_matrix_indptr,
+            const int *a_matrix_indices, const float *a_matrix_data,
+            const float *b_matrix,
             const unsigned int m_dim, const unsigned int n_dim,
             const unsigned int k_dim) {
     for (int col = 0; col < k_dim; col++) {
