@@ -16,12 +16,6 @@ int verify_matrix(float *result, float *gold, size_t m_dim, size_t n_dim) {
     return 0;
 }
 
-static size_t read_cycles() {
-  #if defined(RISCV)
-    return READ_CSR("mcycle");
-  #endif
-}
-
 /* ================ RISC-V specific definitions ================ */
 #define READ_CSR(REG) ({                          \
   unsigned long __tmp;                            \
@@ -45,3 +39,10 @@ static size_t read_cycles() {
   unsigned long __tmp;                            \
   asm volatile ("csrrc %0, " REG ", %1" : "=r"(__tmp) : "rK"(BIT)); \
   __tmp; })
+
+
+static size_t read_cycles() {
+  #if defined(RISCV)
+    return READ_CSR("mcycle");
+  #endif
+}
