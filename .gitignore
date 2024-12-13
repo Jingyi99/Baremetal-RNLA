@@ -4,4 +4,5 @@
 *.dump
 *.riscv
 dataset/archv/
+dataset
 src/eigen/test.cpp
