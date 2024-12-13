@@ -1,6 +1,7 @@
+#include <stdio.h>
 #include <stdlib.h>
 
-void gemm(float *c_matrix, const float *a_matrix, const float *b_matrix,
+void gemm(float *c_matrix, float *a_matrix, float *b_matrix,
             const unsigned int m_dim, const unsigned int n_dim,
             const unsigned int k_dim) {
     // assuming that c_matrix is zero, quick fix

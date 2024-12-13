@@ -12,3 +12,6 @@ void sdgemm_csc(int *c_matrix, const int *a_matrix_indptr,
             const unsigned int m_dim, const unsigned int n_dim,
             const unsigned int k_dim);
 
+void gemm(float *c_matrix,  float *a_matrix,  float *b_matrix,
+            const unsigned int m_dim, const unsigned int n_dim,
+            const unsigned int k_dim);
