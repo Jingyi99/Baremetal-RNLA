@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "gemm_rvv.h"
 #include "riscv_vector.h"
+#include "householder.h"
 
 // Include test vector
 // #include "small_sqL.h"
