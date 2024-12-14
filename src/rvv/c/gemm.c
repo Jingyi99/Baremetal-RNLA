@@ -1,5 +1,5 @@
-#include <riscv_vector.h>
 #include "gemm_rvv.h"
+#include <riscv_vector.h>
 // #include <stdio.h>
 
 void gemm_rvv(float *c_matrix,  float *a_matrix,  float *b_matrix,
@@ -16,7 +16,6 @@ void gemm_rvv(float *c_matrix,  float *a_matrix,  float *b_matrix,
             vl = __riscv_vsetvl_e32m1(c_n_count);
             b_k_ptr = b_n_ptr;
             a_k_ptr = a_matrix;
-
             vfloat32m1_t acc = __riscv_vle32_v_f32m1(c_n_ptr, vl);
             for (size_t k = 0; k < k_dim; ++k) {
                 vfloat32m1_t b_n_data = __riscv_vle32_v_f32m1(b_k_ptr, vl);
