@@ -24,9 +24,9 @@ void print_matrix(float* A, int r, int c) {
   uint32_t i, j;
   for(i = 0; i < r; i++) {
     for(j = 0; j < c-1; j++) {
-      printf("%.2f ", *(A + i*c + j));
+      printf("%5.2f ", *(A + i*c + j));
     }
-    printf("%.2f\n", *(A + i*c + j));
+    printf("%5.2f\n", *(A + i*c + j));
   }
 }
 
