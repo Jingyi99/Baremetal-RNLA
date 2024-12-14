@@ -68,6 +68,7 @@ if (RISCV_V)
   set(rvv_impl
     ./src/cpu/gemm.c
     ./src/rvv/c/gemm.c
+    ./src/rvv/c/utils.c
     ./src/rvv/c/dsgemm.c
     ./src/rvv/c/rand/xorshift_m8.c
     ./src/rvv/c/rand/xoroshiro128p.c
@@ -80,12 +81,11 @@ endif()
 add_executable(test_cpu src/cpu/pregen_sketch_solve.c ${cpu_impl})
 #add_executable(test_cpu src/cpu/time_rand.c ${cpu_impl})
 add_executable(test_rvv test/rvv/test_rvv.c test/rvv/ls_qr_householder_test.c)
-add_executable(predefined_sns_rvv ${rvv_impl} ./src/rvv/c/predefined_sns_rvv.c)
+add_executable(predefined_sns_rvv  ./src/rvv/c/predefined_sns_rvv.c)
 add_executable(sns_rvv ${rvv_impl} ./src/rvv/c/sns_rvv.c)
 
 # Add library for both cpu and rvv sources
-add_library(bmrnla ${rvv_impl}
-${cpu_impl})
+add_library(bmrnla ${rvv_impl} ${cpu_impl})
 
 # Create header variable for all RVV targall RVV
 set(rvv_header_dirs
@@ -103,7 +103,7 @@ target_link_libraries(bmrnla target-riscv)
 target_include_directories(bmrnla PUBLIC ${rvv_header_dirs})
 
 target_link_libraries(predefined_sns_rvv PUBLIC bmrnla)
-target_include_directories(predefined_sns_rvv PUBLIC ${rvv_header_dirs})
+#target_include_directories(predefined_sns_rvv PUBLIC ${rvv_header_dirs})
 
 target_link_libraries(sns_rvv target-riscv)
 target_include_directories(sns_rvv PUBLIC ${rvv_header_dirs})
