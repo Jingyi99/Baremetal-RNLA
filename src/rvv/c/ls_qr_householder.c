@@ -1,144 +1,122 @@
 #include <lib.h>
 #include <math.h>
 #include <stdio.h>
-// #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-#include "riscv_vector.h"
+#include "utils.h"
 #include "gemm_rvv.h"
 #include "householder.h"
-#include "utils.h"
+#include "riscv_vector.h"
 
-// // textbook implementation
-// float house(int m, float* x, float* v) {
-//     float sigma = 0;
-//     float beta = 0;
-//     for (int i = 1; i < m; i++) {
-//         sigma += x[i] * x[i];
-//     }
-//     memcpy(v, x, m * sizeof(float));
-//     v[0] = 1;
-//     if (sigma == 0 && x[0] >= 0) {
-//         beta = 0.0;
-//     } else if (sigma == 0 && x[0] < 0) {
-//         beta = -2.0;
-//     } else {
-//         float mu = sqrt(x[0]*x[0] + sigma);
-//         if (x[0] <= 0) {
-//             v[0] = x[0] - mu;
-//         } else {
-//             v[0] = -sigma / (x[0] + mu);
-//         }
-//         beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
-//         float v0 = v[0];
-//         if (v0 != 0) {
-//             for (int i = 0; i < m; i++) {
-//                 v[i] = v[i]/v0;
-//             }
-//         }
-//         else {
-//             for (int i = 0; i < m; i++) {
-//                 v[i] = 0;
-//             }
-//         }
-//     }
-//     return beta;
-// }
+// textbook implementation
+float house(int m, float* x, float* v) {
+    float beta = 0.0;
+    float sigma = dot_product(x+1, x+1, m-1);
 
-void* allocate_vector_clear(uint32_t bytes) {
-    void* arr = malloc(bytes);
-    size_t vl = __riscv_vsetvl_e8m8(bytes); // Just to ensure VLMAX
-    vuint8m8_t zero = __riscv_vmv_v_x_u8m8(0, vl);
-    void* base = arr;
-    for (int b=bytes; b > 0; b-=vl) {
-        vl = __riscv_vsetvl_e8m8(b); // Just to ensure VLMAX
-        __riscv_vse8_v_u8m8(base, zero, vl);
-        base += vl;
-    }
-    return arr;
-}
+    // for (int i = 1; i < m; i++) {
+    //     sigma += x[i] * x[i];
+    // }
 
+    // memcpy(v, x, m * sizeof(float));
 
-void vector_clear(void* arr, uint32_t bytes) {
-    size_t vl = __riscv_vsetvl_e8m8(bytes); // Just to ensure VLMAX    
-    vuint8m8_t zero = __riscv_vmv_v_x_u8m8(0, vl);
-    void* base = arr;
-    for (int b=bytes; b > 0; b-=vl) {
-        vl = __riscv_vsetvl_e8m8(b); // Just to ensure VLMAX
-        __riscv_vse8_v_u8m8(base, zero, vl);
-        base += vl;
-    }
-}
-
-static inline float dot_product(float* x, float* y, int m) {
+    uint32_t ind = 0;
+    vfloat32m1_t cpy;
     size_t vl;
-    int32_t j = 0;
-    vfloat32m1_t x_p;
-    vfloat32m1_t y_p;
-    vfloat32m1_t prod;
-    vfloat32m1_t sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
-
-    for (int i = m; i > 0; i-=vl){
-        vl = __riscv_vsetvl_e32m1(i);
-        x_p = __riscv_vle32_v_f32m1(x + j, vl);
-        y_p = __riscv_vle32_v_f32m1(y + j, vl);
-        prod = __riscv_vfmul_vv_f32m1(x_p, y_p, vl);
-        sum = __riscv_vfredosum_vs_f32m1_f32m1(prod, sum, vl);
-        j += vl;
+    float* ptr = x;  // Just to get rid of pointer arithmetic warning
+    for (uint32_t x = m; x > 0; x -= vl) {
+        ptr += ind;
+        vl = __riscv_vsetvl_e32m1(x);
+        cpy = __riscv_vle32_v_f32m1(ptr, vl);
+        __riscv_vse32_v_f32m1(v + ind, cpy, vl);
+        ind += vl;
     }
 
-    return __riscv_vfmv_f_s_f32m1_f32(sum);
-}
+    v[0] = 1;
+    if (sigma == 0 && x[0] >= 0) {
+        beta = 0.0;
+    } else if (sigma == 0 && x[0] < 0) {
+        beta = -2.0;
+    } else {
+        float mu = sqrt(x[0]*x[0] + sigma);
+        if (x[0] <= 0) {
+            v[0] = x[0] - mu;
+        } else {
+            v[0] = -sigma / (x[0] + mu);
+        }
+        beta = 2 * v[0] * v[0] / (sigma + v[0]*v[0]);
+        float v0 = v[0];
+        if (v0 != 0) {
+            // for (int i = 0; i < m; i++) {
+            //     v[i] = v[i]/v0;
+            // }
+            uint32_t ind = 0;
+            vfloat32m1_t tmp;
+            for (int i = m; i > 0 ; i-=vl) {
+                vl = __riscv_vsetvl_e32m1(i);
+                tmp = __riscv_vle32_v_f32m1(v+ind, vl);
+                tmp = __riscv_vfdiv_vf_f32m1(tmp, v0, vl);
+                __riscv_vse32_v_f32m1(v+ind, tmp, vl);
+                ind += vl;
+            }
 
-
-// more intuitive implementation
-float house(int m, float* x, float* v){
-    float xNorm = 0;
-    size_t vl;
-    int32_t i;
-    int32_t j = 0;
-
-    vfloat32m1_t x_p;
-    vfloat32m1_t x_sum;
-    vfloat32m1_t x_div;
-    vfloat32m1_t x_prod;
-
-    x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
-    for (i = m; i > 0; i-=vl){
-        // xNorm += x[i] * x[i];
-        vl = __riscv_vsetvl_e32m1(i);
-        x_p = __riscv_vle32_v_f32m1(x + j, vl);
-        x_prod = __riscv_vfmul_vv_f32m1(x_p, x_p, vl);
-        x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
-        j += vl;
+        } else {
+            // for (int i = 0; i < m; i++) {
+            //     v[i] = 0;
+            // }
+            vector_clear(v, m*sizeof(float));
+        }
     }
-
-    xNorm = dot_product(x, x, m);
-    xNorm = sqrt(xNorm);
-    float sign = (x[0] >= 0) ? 1 : -1;
-
-    x[0] = x[0] + sign * xNorm;
-    float xtx = 0;
-    float x0 = x[0];
-
-    j = 0;
-    x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
-    for (i = m; i > 0; i-=vl){
-        // v[i] = v[i]/v0;
-        // vtv += v[i] * v[i];
-        vl = __riscv_vsetvl_e32m1(i);
-        x_p = __riscv_vle32_v_f32m1(x + j, vl);
-        x_div = __riscv_vfdiv_vf_f32m1(x_p, x0, vl);
-        __riscv_vse32_v_f32m1(v + j, x_div, vl);
-        x_prod = __riscv_vfmul_vv_f32m1(x_div, x_div, vl);
-        x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
-        j += vl;
-    }
-
-    xtx = __riscv_vfmv_f_s_f32m1_f32(x_sum);
-    float beta = 2 / xtx;
     return beta;
 }
+
+
+// // more intuitive implementation
+// float house(int m, float* x, float* v){
+//     float xNorm = 0;
+//     size_t vl;
+//     int32_t i;
+//     int32_t j = 0;
+
+//     vfloat32m1_t x_p;
+//     vfloat32m1_t x_sum;
+//     vfloat32m1_t x_div;
+//     vfloat32m1_t x_prod;
+
+//     x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
+//     for (i = m; i > 0; i-=vl){
+//         vl = __riscv_vsetvl_e32m1(i);
+//         x_p = __riscv_vle32_v_f32m1(x + j, vl);
+//         x_prod = __riscv_vfmul_vv_f32m1(x_p, x_p, vl);
+//         x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
+//         j += vl;
+//     }
+
+//     xNorm = dot_product(x, x, m);
+//     xNorm = sqrt(xNorm);
+//     float sign = (x[0] >= 0) ? 1 : -1;
+
+//     x[0] += (x[0] >= 0) ? xNorm : -xNorm; // x[0] + sign * xNorm;
+//     float xtx = 0;
+//     float x0 = x[0];
+
+//     j = 0;
+//     x_sum = __riscv_vfmv_v_f_f32m1(0.0, 1);
+//     for (i = m; i > 0; i-=vl){
+//         vl = __riscv_vsetvl_e32m1(i);
+//         x_p = __riscv_vle32_v_f32m1(x + j, vl);
+//         x_div = __riscv_vfdiv_vf_f32m1(x_p, x0, vl);
+//         __riscv_vse32_v_f32m1(v + j, x_div, vl);
+//         x_prod = __riscv_vfmul_vv_f32m1(x_div, x_div, vl);
+//         x_sum = __riscv_vfredosum_vs_f32m1_f32m1(x_prod, x_sum, vl);
+//         j += vl;
+//     }
+
+//     xtx = __riscv_vfmv_f_s_f32m1_f32(x_sum);
+//     printf("\nxTx:%f\n", xtx);
+
+//     float beta = 2 / xtx;
+//     return beta;
+// }
 
 // generate I - beta * v * vT
 float* houseHolderHelper(float beta, float* v, int m){
@@ -149,7 +127,7 @@ float* houseHolderHelper(float beta, float* v, int m){
     float* v_beta = (float*)malloc(m* sizeof(float)); // Can be malloc, but actually don't need
     float* result = (float*)malloc(m*m* sizeof(float));
     vector_clear(result, m*m*sizeof(float));
-    vector_clear(v_beta, m*sizeof(float));
+    // vector_clear(v_beta, m*sizeof(float));
 
     for(int x = m; x > 0; x-=vl) {
         vl = __riscv_vsetvl_e32m1(x);
@@ -212,7 +190,7 @@ void backSubstitution(float* R, float* y, float* x, int m, int n){
         }
 
         sum  = __riscv_vfmv_f_s_f32m1_f32(sum_v);
-        x[i] = (y[i] - sum) / R[i*n+i];
+        x[i] = R[i*n+i] ? (y[i] - sum) / R[i*n+i] : 0.0; // Prevent divide by zero
         j++;
     }
 }
@@ -221,26 +199,23 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
     float* v; 
     float* x;
     float* H; 
-    // float* A_sub = (float*)calloc(m*n, sizeof(float));
-    // float* A_sub_updated = (float*)calloc(m*n, sizeof(float));
-
     float* A_sub = (float*)malloc(m*n* sizeof(float));
     float* A_sub_updated = (float*)malloc(m*n* sizeof(float));
     // vector_clear(A_sub, m*n*sizeof(float));
     // vector_clear(A_sub_updated, m*n*sizeof(float));
 
-    size_t vl;
-    uint32_t ind;
     float vtb;
     float coeff;
     float beta = 1.0;
 
+    size_t vl;
+    uint32_t ind;
+    uint32_t vec_size;
+    uint32_t mat_size;
+
     vfloat32m1_t cpy;   // Vector solely for copying
     vfloat32m1_t v_vec;
     vfloat32m1_t b_vec;
-
-    uint32_t vec_size;
-    uint32_t mat_size;
 
     for (int j = 0; j < n; j++){
         v = (float*)malloc((m-j)*sizeof(float));
@@ -254,6 +229,7 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
         }
 
         beta = house(m-j, x, v);
+        printf("\nbeta:%f\n", beta);
         H = houseHolderHelper(beta, v, m-j);
 
         // Compute dot product (v^T,b)
@@ -305,11 +281,11 @@ void houseHolderQRb(float* A, float* b, int m, int n) {
         // // printf("A_sub free\n");
         // free(A_sub_updated);
         // // printf("A_sub_updated free\n");
-        // free(H);
+        free(H);
         // // printf("H free\n");
-        // free(v);
+        free(v);
         // // printf("v free\n");
-        // free(x);
+        free(x);
         // // printf("x free\n");
     }
 }
@@ -323,6 +299,7 @@ float* householderQRLS(float* A, float* b, int m, int n){
     houseHolderQRb(A, b, m, n);
 
     print_matrix(A, m, n);
+    printf("\nx:\n");
     print_vector(b, n);
 
     // now b is updated to QTb and A is updated to R
@@ -330,24 +307,6 @@ float* householderQRLS(float* A, float* b, int m, int n){
     backSubstitution(A, b, x, m, n);
     return x;
 }
-
-// float* houseHolderHelper(float beta, float* v, int m){
-//     float* result = (float*)calloc(m*m, sizeof(float));
-//     float* identityMatrix = (float*)calloc(m*m, sizeof(float));
-//     for (int i = 0; i < m; i++) {
-//         identityMatrix[i*m+i] = 1.0;
-//     }
-//     float* vvT = (float*)calloc(m*m, sizeof(float));
-//     gemm_rvv(vvT, v, v, m, m, 1);
-//     for (int i = 0; i < m; i++){
-//         for (int j = 0; j < m; j++){
-//             result[i*m+j] = identityMatrix[i*m+j] - beta * vvT[i*m+j];
-//         }
-//     }
-//     free(identityMatrix);
-//     free(vvT);
-//     return result;
-// }
 
 
 
