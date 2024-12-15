@@ -1,3 +1,5 @@
+    #include "../../src/cpu/ls_qr_householder.c"
+
     void test_house() {
         // set test cases here
         int m = 3;
@@ -29,7 +31,7 @@
         }
         printf("\n");
         }
-        float *Hx = malloc(sizeof(float) * m);
+        float *Hx = calloc(m, sizeof(float));
         gemm(Hx, result, x, m, 1, m);
         printf("Hx: \n");
         for (int i = 0; i < m; i++){
@@ -44,12 +46,12 @@
         // int m = 4;
         // int n = 3;
         // float A[] = {1.0, -1.0, 4.0, 1.0, 4.0, -2.0, 1.0, 4.0, 2.0, 1.0, -1.0, 0.0};
-        // int m = 3;
-        // int n = 3;
-        // float A[] = {2.0, -2.0, 18.0, 2.0, 1.0, 0.0, 1.0, 2.0, 0.0};
-        int m = 4;
+        int m = 3;
         int n = 3;
-        float A[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 10.0, 11.0, 13.0};
+        float A[] = {2.0, -2.0, 18.0, 2.0, 1.0, 0.0, 1.0, 2.0, 0.0};
+        // int m = 4;
+        // int n = 3;
+        // float A[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 10.0, 11.0, 13.0};
         printf("A:\n");
         for (int i = 0; i < m; i++){
         for (int j = 0; j < n; j++){
@@ -97,15 +99,34 @@
     void test_houseHolderQRLS() {
         int m = 4;
         int n = 3;
-        float A[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0, 10.0, 11.0, 13.0};
+        float A[] = {1.0, -1.0, 4.0, 1.0, 4.0, -2.0, 1.0, 4.0, 2.0, 1.0, -1.0, 0.0};
+        // float A[] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0};
+        // int m = 3;
+        // int n = 3;
+        // float A[] = {2.0, -2.0, 18.0, 2.0, 1.0, 0.0, 1.0, 2.0, 0.0};
         float b[] = {14.0, 32.0, 50.0, 68.0};
 
-        float *x = (float*) malloc(sizeof(float) * n);
-        memset(x, 0, sizeof(float) * n);
+        float *x = (float*) calloc(n, sizeof(float));
+        printf("A: \n");
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                printf("%f ", A[i*n+j]);
+            }
+            printf("\n");
+        }
+        printf("\n");
         x = householderQRLS(A, b, m, n);
+        printf("R: \n");
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                printf("%f ", A[i*n+j]);
+            }
+            printf("\n");
+        }
+        printf("\n");
         printf("x: \n");
         for (int i = 0; i < n; i++) {
-        printf("%lf ", x[i]);
+            printf("%f ", x[i]);
         }
         printf("\n");
     }
@@ -138,7 +159,7 @@
         }
         fclose(file);
         // print (A - qr) / A
-        float* qr = (float*)malloc(m*n*sizeof(float));
+        float* qr = (float*)calloc(m*n, sizeof(float));
         gemm(qr, Q, R, m, n, n);
         float error = 0;
         float residual = 0;
@@ -161,10 +182,10 @@
         printf("backward error: %f\n", error);
     }
 
-    // int main() {
-    //     // test_house();
-    //     // test_houseHolderHelper();
-    //     // test_houseHolderQR();
-    //     // test_backSubstitution();
-    //     test_houseHolderQRLS();
-    // }
+    int main() {
+        // test_house();
+        // test_houseHolderHelper();
+        // test_houseHolderQR();
+        // test_backSubstitution();
+        test_houseHolderQRLS();
+    }
