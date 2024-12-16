@@ -15,14 +15,14 @@
 // #include "sk.h"
 // #include "test.h"
 
-// #include "sk_32_fixe.h"
+// #include "sk_32_fixed.h"
 // #include "sk_32_interval.h"
 // #include "sk_256_interval.h"
 // #include "sk_256_fixed.h"
 // #include "sk512_fixed.h"
-#include "sk_1024_fixed.h"
+// #include "sk_1024_fixed.h"
 // #include "sk_4096_fixed.h"
-// #include "sk_8192_fixed.h"
+#include "sk_8192_fixed.h"
 
 
 /*
@@ -52,6 +52,8 @@ float* pre_sketch_n_solve_rvv(float* S, uint32_t* A_ptr, uint32_t* A_ind, float*
   printf("TIME (CYCLES)=============\n");
   printf("  Sketching: %lu\n", t1-t0);
   printf("  Solving: %lu\n", t2-t1);
+  printf("\nSolution (x): \n");
+  print_vector(x, N);
 
   return x;
 }

@@ -155,8 +155,62 @@ float* houseHolderHelper(float beta, float* v, int m){
     return result;
 }
 
+/*
+ * Perform forward substituion (Rx=y)
+ *
+ *  R - the input matrix; R is A in Ax = b
+ *  y - the solution, y is b in Ax = b
+ *  x - an empty array
+ *  m - number of rows for R
+ *  n - number of columns for R
+ */
+void forawardSubstitution(float* R, float* y, float* x, int m, int n){
+    float sum;
+    size_t vl;
+    int32_t i;
+    int32_t j;
+    int32_t k;
 
+    vfloat32m1_t R_p;
+    vfloat32m1_t x_p;
+    vfloat32m1_t prod;
+    vfloat32m1_t sum_v;
 
+    // First iteration
+    x[0] = y[0] / R[(0)*n+(0)];
+
+    j = 1;
+    for (i = 1; i < n; i++) {
+        k = i; // also m-i-1
+
+        // Zero sum vector (splat)
+        sum_v = __riscv_vfmv_v_f_f32m1(0.0, 1);
+        while (k > 0) {
+            vl    = __riscv_vsetvl_e32m1(k);
+            // Load vectors
+            x_p   = __riscv_vle32_v_f32m1(x + i + 1 + (j-k), vl);
+            R_p   = __riscv_vle32_v_f32m1(R + (i*n) + (n-k), vl);
+            // Dot Product
+            prod  = __riscv_vfmul_vv_f32m1(R_p, x_p, vl);
+            sum_v = __riscv_vfredosum_vs_f32m1_f32m1(prod, sum_v, vl);
+            k    -= vl;
+        }
+
+        sum  = __riscv_vfmv_f_s_f32m1_f32(sum_v);
+        x[i] = R[i*n+i] ? (y[i] - sum) / R[i*n+i] : 0.0; // Prevent divide by zero
+        j++;
+    }
+}
+
+/*
+ * Perform backsubstituion (Rx=y)
+ *
+ *  R - the input matrix; R is A in Ax = b
+ *  y - the solution, y is b in Ax = b
+ *  x - an empty array
+ *  m - number of rows for R
+ *  n - number of columns for R
+ */
 void backSubstitution(float* R, float* y, float* x, int m, int n){
     float sum;
     size_t vl;
