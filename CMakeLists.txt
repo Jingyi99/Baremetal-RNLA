@@ -4,7 +4,7 @@ project(bmrnla VERSION 0.1 LANGUAGES C)
 
 include(${CMAKE_SOURCE_DIR}/rnla.cmake)
 
-set(BMRNLA_CMAKE_PATH_INCLUDE_PATH ${BMRNLA_CMAKE_PATH}/src/${USE_TYPE} CACHE STRING "BMRNLA include path")
+  set(BMRNLA_CMAKE_PATH_INCLUDE_PATH ${BMRNLA_CMAKE_PATH}/src/${USE_TYPE} CACHE STRING "BMRNLA include path")
 
 option(RISCV_V              "Use RISCV vector extension"        ON)
 option(NANO                 "Use htif_nano only (supports printf with floats)" ON)
@@ -66,10 +66,11 @@ if (RISCV_V)
   message(STATUS "Using RVV implementation")
   add_compile_definitions(RISCV_V)
   set(rvv_impl
-    ./src/cpu/gemm.c
+    #./src/cpu/gemm.c
     ./src/rvv/c/gemm.c
     ./src/rvv/c/utils.c
     ./src/rvv/c/dsgemm.c
+    ./src/rvv/c/cholesky.c
     ./src/rvv/c/rand/xorshift_m8.c
     ./src/rvv/c/rand/xoroshiro128p.c
     ./src/rvv/c/ls_qr_householder.c
@@ -79,10 +80,12 @@ endif()
 # Add targets for different executables
 #add_executable(test_cpu src/cpu/sketch_n_solve.c)
 add_executable(test_cpu src/cpu/pregen_sketch_solve.c ${cpu_impl})
-#add_executable(test_cpu src/cpu/time_rand.c ${cpu_impl})
-add_executable(test_rvv test/rvv/test_rvv.c test/rvv/ls_qr_householder_test.c)
+add_executable(scalar_access src/cpu/scalar_access.c ${cpu_impl})
+add_executable(test_rvv ${rvv_impl} test/rvv/test_rvv.c test/rvv/ls_qr_householder_test.c)
 add_executable(predefined_sns_rvv  ./src/rvv/c/predefined_sns_rvv.c)
 add_executable(sns_rvv ${rvv_impl} ./src/rvv/c/sns_rvv.c)
+add_executable(test_cholesky_rvv ${rvv_impl} ./src/rvv/c/test_cholesky.c)
+
 
 # Add library for both cpu and rvv sources
 add_library(bmrnla ${rvv_impl} ${cpu_impl})
@@ -108,8 +111,11 @@ target_link_libraries(predefined_sns_rvv PUBLIC bmrnla)
 target_link_libraries(sns_rvv target-riscv)
 target_include_directories(sns_rvv PUBLIC ${rvv_header_dirs})
 
-target_link_libraries(test_rvv PUBLIC bmrnla)
+target_link_libraries(test_rvv PUBLIC target-riscv)
 target_include_directories(test_rvv PUBLIC ${rvv_header_dirs})
+
+target_link_libraries(test_cholesky_rvv PUBLIC target-riscv)
+target_include_directories(test_cholesky_rvv PUBLIC ${rvv_header_dirs})
 
 #target_link_libraries(test_cpu PUBLIC bmrnla)
 target_link_libraries(test_cpu PUBLIC target-riscv)
@@ -119,6 +125,18 @@ target_include_directories(test_cpu PUBLIC
   ./dataset/ls
   ./dataset/test_mats
 )
+
+
+target_link_libraries(scalar_access PUBLIC target-riscv)
+target_include_directories(scalar_access PUBLIC
+  ./test/
+  ./dataset
+  ./dataset/ls
+  ./dataset/test_mats
+)
+
+
+
 
 set(OBJDUMP_FLAGS  -C -D -S --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data)
 add_custom_command(TARGET sns_rvv POST_BUILD COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS}  sns_rvv > sns_rvv.dump)
