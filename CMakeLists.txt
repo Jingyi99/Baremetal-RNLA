@@ -7,7 +7,7 @@ include(${CMAKE_SOURCE_DIR}/rnla.cmake)
 set(BMRNLA_CMAKE_PATH_INCLUDE_PATH ${BMRNLA_CMAKE_PATH}/src/${USE_TYPE} CACHE STRING "BMRNLA include path")
 
 option(RISCV_V              "Use RISCV vector extension"        ON)
-option(NANO                 "Use htif_nano only (supports printf with floats)" OFF)
+option(NANO                 "Use htif_nano only (supports printf with floats)" ON)
 
 add_library(target-riscv INTERFACE)
 target_compile_features(target-riscv INTERFACE c_std_11)
@@ -75,7 +75,7 @@ if (RISCV_V)
 endif()
 
 # Add targets for different executables
-add_executable(test_cpu src/cpu/sketch_n_solve.c)
+add_executable(test_cpu test/cpu/test_sns_time.c)
 add_executable(test_rvv test/rvv/test_rvv.c)
 add_executable(predefined_sns_rvv ${rvv_impl} ./src/rvv/predefined_sns_rvv.c)
 add_executable(sns_rvv ${rvv_impl} ./src/rvv/sns_rvv.c)
