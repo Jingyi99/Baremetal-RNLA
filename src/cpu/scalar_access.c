@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>   
 #include "lib.h"
 #include "riscv.h"
 #include "sk_32_fixed.h"
@@ -110,12 +111,19 @@ void gen_seed() {
 }
 
 int main() {
-    printf("TEST MEMORY READ TIME\n");
-    uint64_t mem_start = read_cycles();
-    // for (int i = 0; i < 50; i++) {
-    //     sketching_matrix[i];
+    printf("TEST MEMORY MEG2A READ/WRITE TIME\n");
+    volatile float* ptr0 = (float*)malloc(4000*sizeof(float));
+    float val;
+    float* ptr1 = (float*)0xBAAAA00B;
+    // for (int x = 0; x < 4000; x++) {
+    //   ptr0[x] = 1.0*x;
     // }
-    float val = sketching_matrix[10];
+    printf("Reading\n");
+    uint64_t mem_start = read_cycles();
+    // for(int x=0; x < 4000; x++){
+    //  val = *ptr0; 
+    // }
+    val = *ptr1;
     uint64_t mem_time = read_cycles() - mem_start;
     printf("Don't optimize this out %f\n", val);
     printf("Memory access time is %lu cycles\n", mem_time);
