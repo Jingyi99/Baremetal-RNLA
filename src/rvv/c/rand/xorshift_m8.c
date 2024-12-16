@@ -93,11 +93,21 @@ vfloat32m8_t hadamardrize_e32(vuint32m8_t rand_num, size_t vl) {
   return __riscv_vreinterpret_v_u32m8_f32m8(res);
 }
 
+
+
 // x - beginning x coordinate of column
 // y - beginning y coordinate of column
 // vl - vector length
-vuint32m8_t gen_by_coordinates(uint32_t x, uint32_t y, size_t vl) {
-  //ind = iota 
+vuint32m8_t gen_by_coordinates32(uint32_t x, uint32_t y, size_t vl) {
+  vuint32m8_t ind = __riscv_vid_v_u32m8(vl);
+  vuint32m8_t seeds = __riscv_vadd_vx_u32m8(ind, x, vl);
+  vuint32m8_t y_vec = __riscv_vadd_vx_u32m8(ind, x, vl);
+  seeds = __riscv_vsll_vx_u32m8(seeds, 16, vl);
+  seeds = __riscv_vsll_vx_u32m8(seeds, y, vl);
+  y_vec = xorshift(seeds);
+  return y_vec;
+
+  // ind = iota 
   // x_ind = ind + x
   // y_ind = ind + x
   // x_ind = x_ind << 32 | y_ind

@@ -72,6 +72,23 @@ vfloat32m4_t rand2float_64(vuint64m8_t rand_num, size_t vl) {
   return __riscv_vfsgnj_vv_f32m4(resf, signf, vl);
 }
 
+// x - beginning x coordinate of column
+// y - beginning y coordinate of column
+// vl - vector length
+vuint64m8_t gen_by_coordinates64(uint32_t x, uint32_t y, size_t vl) {
+  vuint64m8_t ind = __riscv_vid_v_u64m8(vl);
+  vuint64m8_t x_vec = __riscv_vadd_vx_u64m8(ind, x, vl);
+  vuint64m8_t y_vec = __riscv_vadd_vx_u64m8(ind, x, vl);
+  y_vec = xoroshiro128p(&x_vec, &y_vec, vl);
+  return y_vec;
+
+  // ind = iota 
+  // x_ind = ind + x
+  // y_ind = ind + x
+  // x_ind = x_ind << 32 | y_ind
+  // Call PRNG with seeds
+}
+
 // Helper function for xoroshiro128p function
 static inline vuint64m8_t rotl(const vuint64m8_t x, int k, size_t vl) {
   vuint64m8_t tmp0 = __riscv_vsrl_vx_u64m8(x, 64-k, vl);
