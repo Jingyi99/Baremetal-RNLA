@@ -9,7 +9,7 @@
 
 // Include test vector
 // #include "small_sqL.h"
-#include "mk12-b2.h"
+#include "../../dataset/sns/sk_32_fixed.h"
 
 /*
  * Solve a sketch system equstion using Householder (QR Demp)

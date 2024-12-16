@@ -26,7 +26,7 @@
 // 200x25 FAILS
 // 120x25 WORKS
 // 190x25 FAILS
-#include "test.h"
+#include "../../dataset/sns/sk_32_fixed.h"
 
 
 /*

@@ -43,7 +43,6 @@ float house(int m, float* x, float* v){
     }
     xNorm = sqrt(xNorm);
     float sign = (x[0] >= 0) ? 1 : -1;
-    // memcpy(v, x, m * sizeof(float));
     v[0] = x[0] + sign * xNorm;
     float v0 = v[0];
     v[0] = v[0] / v0;
@@ -127,11 +126,15 @@ float* backSubstitution(float* R, float* y, int m, int n){
             sum += R[i*n+j] * x[j];
         }
         if (R[i * n + i] == 0.0) {
-            fprintf(stderr, "Division by zero at row %d\n", i);
-            free(x); // Clean up allocated memory
-            exit(EXIT_FAILURE);
+            // hack for now
+            x[i] = 0;
+            // fprintf(stderr, "Division by zero at row %d\n", i);
+            // free(x); // Clean up allocated memory
+            // exit(EXIT_FAILURE);
+        } else {
+            x[i] = (y[i] - sum) / R[i*n+i];
         }
-        x[i] = (y[i] - sum) / R[i*n+i];
+        
     }
     return x;
 }
